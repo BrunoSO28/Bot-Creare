@@ -3017,7 +3017,7 @@ var TemplateExportableComponent = /** @class */ (function () {
         this.selectedLanguageForEdit = '';
         this.availableLanguagesForEdit = [];
         this.allowEditing = false;
-        this.dataService.havePermission('TEMPLATES,EXPORTABLE', 'CADASTRO');
+        this.dataService.havePermission('TEMPLATES_EXPORTABLE', 'CADASTRO');
         this.getPermissions();
     }
     TemplateExportableComponent.prototype.ngOnInit = function () {

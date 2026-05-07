@@ -128,6 +128,10 @@ class PlayWrightBot(QThread):
                 
                 await self.pagina.mouse.click(400, 10)
 
+                await self.pagina.locator(".playMovie").click()
+                await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[2]/treatment-step-one/div/div/div[3]/div[3]/button").click()
+                await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[2]/treatment-step-two/div/div/div[2]/div[3]/button").click()
+
                 self.sinalPronto.emit()
 
             while not self.isInterruptionRequested():
@@ -142,9 +146,9 @@ class PlayWrightBot(QThread):
         asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self.run_playwright())
 
-    def clickNavegador(self, locator: str):
+    '''def clickNavegador(self, locator: str):
         if self.loop:
-            asyncio.run_coroutine_threadsafe(self.acaoClick(locator), self.loop)
+           asyncio.run_coroutine_threadsafe(self.acaoClick(locator), self.loop)
 
     async def acaoClick(self, locator: str):
         if self.pagina is None:
@@ -154,7 +158,7 @@ class PlayWrightBot(QThread):
             await self.pagina.locator(locator).click()
             self.sinalGestao.emit(locator)
         except Exception as e:
-            print(f"Erro ao clicar em {locator}: {e}")
+            print(f"Erro ao clicar em {locator}: {e}")'''
 
     def clickSelecao(self, valor: str):
         if self.loop:
@@ -182,6 +186,7 @@ class PlayWrightBot(QThread):
             print(">>> ERRO coletarTratativas:", e)
 
     async def selecaoTratativa(self, valor: str):
+        print(">>> selecaoTratativa chamado com:", valor)
         try:
             # Clica no dropdown visual para abrir
             await self.pagina.locator("treatment-step-three p-dropdown").click()
@@ -189,7 +194,7 @@ class PlayWrightBot(QThread):
             
             # Clica na opção pelo texto dentro do painel que abre
             await self.pagina.locator(
-                "p-dropdownitem li"
+                "treatment-step-three select option"
             ).filter(has_text=valor).click()
             
             await self.pagina.wait_for_timeout(300)
@@ -278,7 +283,7 @@ class janelaPrincipal (QMainWindow):
 
         btnValido = QPushButton("Válido")
         btnValido.clicked.connect(self.abrirTratativa)
-        btnValido.clicked.connect(self.aplicarGestao)
+        #btnValido.clicked.connect(self.aplicarGestao)
         btnValido.setStyleSheet("background-color: green;")
 
         btnInvalido = QPushButton("Inválido")
@@ -376,7 +381,7 @@ class janelaPrincipal (QMainWindow):
         self.bot = PlayWrightBot("https://login.goawakecloud.com.br/pt-br/goawake?cc=true")
         self.bot.sinalInfo.connect(self.coletarInfo)
         self.bot.sinalDownload.connect(self.downloadConcluido)
-        self.bot.sinalGestao.connect(self.aplicarGestao)
+        #self.bot.sinalGestao.connect(self.aplicarGestao)
         self.bot.sinalTratativas.connect(self.listarTratativas)
         self.bot.start()
 
@@ -402,11 +407,11 @@ class janelaPrincipal (QMainWindow):
         
         self.containerT.show()  # ← apenas exibe, já foi criado no __init__
 
-    def aplicarGestao(self):
+    '''def aplicarGestao(self):
         if self.bot:
             self.bot.clickNavegador(".playMovie")
             self.bot.clickNavegador("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[2]/treatment-step-one/div/div/div[3]/div[3]/button")
-            self.bot.clickNavegador("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[2]/treatment-step-two/div/div/div[2]/div[3]/button")
+            self.bot.clickNavegador("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[2]/treatment-step-two/div/div/div[2]/div[3]/button")'''
 
     def sincronizarSelecao(self, valor: str):
         print(">>> sincronizarSelecao chamado:", valor)
