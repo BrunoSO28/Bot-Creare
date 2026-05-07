@@ -1,0 +1,2083 @@
+(window["webpackJsonp"] = window["webpackJsonp"] || []).push([["app-pages-pages-module~reports-reports-module"],{
+
+/***/ "./src/app/@core/data/report.service.ts":
+/*!**********************************************!*\
+  !*** ./src/app/@core/data/report.service.ts ***!
+  \**********************************************/
+/*! exports provided: ReportService */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ReportService", function() { return ReportService; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
+/* harmony import */ var _config_config_service__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../config/config.service */ "./src/app/@core/config/config.service.ts");
+/* harmony import */ var app_pages_login_authentication_service__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! app/pages/login/authentication.service */ "./src/app/pages/login/authentication.service.ts");
+/* harmony import */ var _enum_report_types_enum__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../enum/report-types.enum */ "./src/app/@core/enum/report-types.enum.ts");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! moment */ "./node_modules/moment/moment.js");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(moment__WEBPACK_IMPORTED_MODULE_4__);
+/* harmony import */ var _export_files_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./export-files.service */ "./src/app/@core/data/export-files.service.ts");
+/* harmony import */ var app_core_data_translate_json_service__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! app/@core/data/translate-json.service */ "./src/app/@core/data/translate-json.service.ts");
+/* harmony import */ var _angular_common_http__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! @angular/common/http */ "./node_modules/@angular/common/fesm5/http.js");
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (undefined && undefined.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (undefined && undefined.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+
+
+
+
+
+
+
+
+var ReportService = /** @class */ (function () {
+    function ReportService(http, configService, authService, exportFiles, translateJsonService) {
+        this.http = http;
+        this.configService = configService;
+        this.authService = authService;
+        this.exportFiles = exportFiles;
+        this.translateJsonService = translateJsonService;
+        this.customersChild = [];
+        this.alertTypes = [];
+        this.reportTypes = [
+            { label: this.translateJsonService.getTranslateSubs('REPORT-TYPES.resumeReport'), value: _enum_report_types_enum__WEBPACK_IMPORTED_MODULE_3__["ReportTypes"]["Resumo de Alertas"] },
+            { label: this.translateJsonService.getTranslateSubs('REPORT-TYPES.trendReport'), value: _enum_report_types_enum__WEBPACK_IMPORTED_MODULE_3__["ReportTypes"]["Tendência de Alertas"] },
+            { label: this.translateJsonService.getTranslateSubs('REPORT-TYPES.daysOrHoursReport'), value: _enum_report_types_enum__WEBPACK_IMPORTED_MODULE_3__["ReportTypes"]["Consolidado de Alertas"] },
+            { label: this.translateJsonService.getTranslateSubs('REPORT-TYPES.treatReport'), value: _enum_report_types_enum__WEBPACK_IMPORTED_MODULE_3__["ReportTypes"].Tratativas },
+        ];
+        this.baseUrl = configService.getApiURI();
+    }
+    ReportService.prototype.setValues = function (customersChild, startDate, endDate, alertTypes, reportType) {
+        this.customersChild = customersChild;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.alertTypes = alertTypes;
+        this.reportType = reportType;
+    };
+    ReportService.prototype.fetchResumeReport = function (customersChild, startDate, endDate, alertTypes) {
+        var HEADERS = this.authService.getHttpHeaders();
+        var URL_TO_FETCH = this.configService.webServicesV2['reportResume']
+            .url(this.baseUrl, customersChild.join(','), startDate, endDate, alertTypes.join(','));
+        return this.http.get(URL_TO_FETCH, { headers: HEADERS })
+            .toPromise()
+            .catch(function (err) {
+            return Promise.reject(err.message ? err.message : "Server error");
+        });
+    };
+    ReportService.prototype.fetchTrendReport = function (customersChild, startDate, endDate, alertTypes) {
+        var HEADERS = this.authService.getHttpHeaders();
+        var URL_TO_FETCH = this.configService.webServicesV2['reportTrend']
+            .url(this.baseUrl, customersChild.join(','), startDate, endDate, alertTypes.join(','));
+        return this.http.get(URL_TO_FETCH, { headers: HEADERS })
+            .toPromise()
+            .catch(function (err) {
+            return Promise.reject(err.message ? err.message : "Server error");
+        });
+    };
+    ReportService.prototype.fetchDaysAndHoursReport = function (customersChild, startDate, endDate, alertTypes) {
+        var HEADERS = this.authService.getHttpHeaders();
+        var URL_TO_FETCH = this.configService.webServicesV2['reportDaysOrHours']
+            .url(this.baseUrl, customersChild.join(','), startDate, endDate, alertTypes.join(','));
+        return this.http.get(URL_TO_FETCH, { headers: HEADERS })
+            .toPromise()
+            .catch(function (err) {
+            return Promise.reject(err.message ? err.message : "Server error");
+        });
+    };
+    ReportService.prototype.fetchTreatsReport = function (customersChild, startDate, endDate, alertTypes) {
+        var HEADERS = this.authService.getHttpHeaders();
+        var URL_TO_FETCH = this.configService.webServicesV2['reportTreatment']
+            .url(this.baseUrl, customersChild.join(','), startDate, endDate, alertTypes.join(','));
+        return this.http.get(URL_TO_FETCH, { headers: HEADERS })
+            .toPromise()
+            .catch(function (err) {
+            return Promise.reject(err.message ? err.message : "Server error");
+        });
+    };
+    ReportService.prototype.setMomentLocale = function () {
+        moment__WEBPACK_IMPORTED_MODULE_4__["updateLocale"]('pt-br', {
+            months: 'Janeiro_Fevereiro_Março_Abril_Maio_Junho_Julho_Agosto_Setembro_Outubro_Novembro_Dezembro'.split('_'),
+        });
+        moment__WEBPACK_IMPORTED_MODULE_4__["locale"]('pt-br');
+    };
+    ReportService.prototype.calcMedia = function (n1, n2) {
+        return Number((n1 / n2).toFixed(1));
+    };
+    ReportService.prototype.createTicks = function (data_reports) {
+        var ticks = [];
+        data_reports.forEach(function (_month) {
+            ticks.push({ v: new Date(_month.month), f: moment__WEBPACK_IMPORTED_MODULE_4__(_month.month).format('MMMM / YY') });
+        });
+        return ticks;
+    };
+    ReportService.prototype.saveReport = function (elementos, titleReport, startDate, endDate) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var images;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, Promise.all(elementos.map(function (elemento) { return __awaiter(_this, void 0, void 0, function () {
+                            var image;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0: return [4 /*yield*/, this.exportFiles.getImageByElement(elemento)];
+                                    case 1:
+                                        image = _a.sent();
+                                        return [2 /*return*/, image];
+                                }
+                            });
+                        }); }))];
+                    case 1:
+                        images = _a.sent();
+                        this.exportFiles.saveInPDF(images, titleReport, startDate, endDate);
+                        return [2 /*return*/, true];
+                }
+            });
+        });
+    };
+    ReportService = __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Injectable"])(),
+        __metadata("design:paramtypes", [_angular_common_http__WEBPACK_IMPORTED_MODULE_7__["HttpClient"],
+            _config_config_service__WEBPACK_IMPORTED_MODULE_1__["ConfigService"],
+            app_pages_login_authentication_service__WEBPACK_IMPORTED_MODULE_2__["AuthenticationService"],
+            _export_files_service__WEBPACK_IMPORTED_MODULE_5__["ExportFilesService"],
+            app_core_data_translate_json_service__WEBPACK_IMPORTED_MODULE_6__["TranslateJsonService"]])
+    ], ReportService);
+    return ReportService;
+}());
+
+
+
+/***/ }),
+
+/***/ "./src/app/@core/enum/days-name.enum.ts":
+/*!**********************************************!*\
+  !*** ./src/app/@core/enum/days-name.enum.ts ***!
+  \**********************************************/
+/*! exports provided: DaysName */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "DaysName", function() { return DaysName; });
+var DaysName;
+(function (DaysName) {
+    DaysName[DaysName["Domingo"] = 1] = "Domingo";
+    DaysName[DaysName["Segunda-Feira"] = 2] = "Segunda-Feira";
+    DaysName[DaysName["Ter\u00E7a-Feira"] = 3] = "Ter\u00E7a-Feira";
+    DaysName[DaysName["Quarta-Feira"] = 4] = "Quarta-Feira";
+    DaysName[DaysName["Quinta-feira"] = 5] = "Quinta-feira";
+    DaysName[DaysName["Sexta-Feira"] = 6] = "Sexta-Feira";
+    DaysName[DaysName["S\u00E1bado"] = 7] = "S\u00E1bado";
+})(DaysName || (DaysName = {}));
+
+
+/***/ }),
+
+/***/ "./src/app/@core/enum/report-types.enum.ts":
+/*!*************************************************!*\
+  !*** ./src/app/@core/enum/report-types.enum.ts ***!
+  \*************************************************/
+/*! exports provided: ReportTypes */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ReportTypes", function() { return ReportTypes; });
+var ReportTypes;
+(function (ReportTypes) {
+    ReportTypes["Resumo de Alertas"] = "resumeReport";
+    ReportTypes["Tend\u00EAncia de Alertas"] = "trendReport";
+    ReportTypes["Consolidado de Alertas"] = "daysOrHoursReport";
+    ReportTypes["Tratativas"] = "treatReport";
+})(ReportTypes || (ReportTypes = {}));
+
+
+/***/ }),
+
+/***/ "./src/app/pages/components/export-buttons/export-buttons.component.ts":
+/*!*****************************************************************************!*\
+  !*** ./src/app/pages/components/export-buttons/export-buttons.component.ts ***!
+  \*****************************************************************************/
+/*! exports provided: ExportButtonsComponent */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ExportButtonsComponent", function() { return ExportButtonsComponent; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (undefined && undefined.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+
+var ExportButtonsComponent = /** @class */ (function () {
+    function ExportButtonsComponent() {
+        this.clickedPDF = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["EventEmitter"]();
+        this.clickedEXCEL = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["EventEmitter"]();
+        this.loadingExcel = false;
+        this.loadingPdf = false;
+    }
+    ExportButtonsComponent.prototype.clickedButton = function (buttom) {
+        if (buttom == 'pdf') {
+            this.clickedPDF.emit(true);
+        }
+        else {
+            this.clickedEXCEL.emit(true);
+        }
+    };
+    ExportButtonsComponent.prototype.ngOnChanges = function (changes) {
+        console.log(changes);
+        if (changes && changes['loadingPdf']) {
+            this.loadingPdf = changes['loadingPdf'].currentValue;
+        }
+    };
+    __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Output"])('clickedPDF'),
+        __metadata("design:type", _angular_core__WEBPACK_IMPORTED_MODULE_0__["EventEmitter"])
+    ], ExportButtonsComponent.prototype, "clickedPDF", void 0);
+    __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Output"])('clickedEXCEL'),
+        __metadata("design:type", _angular_core__WEBPACK_IMPORTED_MODULE_0__["EventEmitter"])
+    ], ExportButtonsComponent.prototype, "clickedEXCEL", void 0);
+    __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"])('loadingExcel'),
+        __metadata("design:type", Boolean)
+    ], ExportButtonsComponent.prototype, "loadingExcel", void 0);
+    __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"])('loadingPdf'),
+        __metadata("design:type", Boolean)
+    ], ExportButtonsComponent.prototype, "loadingPdf", void 0);
+    ExportButtonsComponent = __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Component"])({
+            selector: 'export-buttons',
+            template: "\n    <div class=\"export-options\" style=\"width: 100%\">        \n        <div alt=\"Exportar Dados em Planilha\" placement=\"top\" ngbTooltip=\"Funcionalidade em Desenvolvimento\">\n            <span class=\"export-options__btn\" *ngIf=\"loadingExcel; else loadedExcel\">Gerando Excel...</span>\n            <ng-template #loadedExcel>\n                <span (click)=\"clickedButton('excel')\" class=\"export-options__btn\">\n                    <i class=\"fa fa-file-excel-o\" aria-hidden=\"true\" style=\"margin-right: 5px\"></i>\n                    <p>Planilha</p>\n                </span>\n            </ng-template>      \n        </div>\n        <div aria-multiline=\"Exportar Gr\u00E1ficos em PDF\">\n            <span class=\"export-options__btn\" *ngIf=\"loadingPdf; else loadedPdf\">Gerando PDF...</span>\n            <ng-template #loadedPdf>\n                <span (click)=\"clickedButton('pdf')\"  style=\"display: flex;\" class=\"export-options__btn\">\n                    <i class=\"fa fa-file-pdf-o\" aria-hidden=\"true\" style=\"margin-right: 5px\"></i>\n                    <p>PDF</p>\n                </span>                \n            </ng-template>         \n        </div>\n        <span>{{ 'REPORT-INDICATORS.export-report' | translate }}: </span>\n    </div>\n  ",
+            styles: ["\n    .export-options {\n        width: 100%;\n        padding: 0.8em 1.2em;\n        border-top: 1px solid #d2dee8;\n        display: flex;\n        align-items: center;\n        flex-direction: row-reverse;\n    }\n    .export-options__btn {\n        border-radius: 5px;\n        font-size: 0.875em;\n        display: flex;\n        padding: 0.7em 1.5em;\n        background-color: #dedede;\n        color: #717171;\n        max-height: 35px;\n        margin: 0px 0 0 15px;\n    }\n    .export-options__btn:hover {\n        background-color: #f7c476;\n        color: #a17a3e;\n        cursor: pointer;\n    }\n    .export-options__btn i {\n        margin-right: 5px\n    }\n  "]
+        })
+    ], ExportButtonsComponent);
+    return ExportButtonsComponent;
+}());
+
+
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/component/report-filter/report-filter.component.html":
+/*!************************************************************************************!*\
+  !*** ./src/app/pages/reports/component/report-filter/report-filter.component.html ***!
+  \************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = "<nb-card class=\"mx-auto\" style=\"width: 300px;\">\n  <div class=\"toolbar\">\n    <div class=\"toolbar__sec\">\n      <i class=\"fa fa-cogs\" aria-hidden=\"true\"></i>  \n      <p>{{'FILTER-GLOBAL.filters' | translate}}</p>        \n    </div>\n    <i class=\"fa fa-info\" style=\"position: absolute;right: 45px;top: 20px;color: #a2a1a1;cursor: pointer;\"\n      placement=\"bottom\" ngbTooltip=\"{{'FILTER-GLOBAL.filters_tooltip' | translate}}\"></i>\n  </div>\n\n  <div class=\"report-filter report-filter--high-resolution\">\n      <div class=\"report-filter__item\">\n        <label>{{'FILTER-GLOBAL.customer_child' | translate}}</label>\n        <span style=\"position: relative; display: block\">\n          <focus-tree-input [pendingContent]=false [contentNodes]=\"selItemCustomerChild\" [loadedContent]=\"loadedCustomer\" \n            [selectedNodes]=\"selectedCustomers\" [checkBox]=true [triStateChk]=true [multChk]=true [contentName]=\"'GLOBAL.customers' | translate\" \n            [overlayPanelWidth]=\"'450px'\" (changedNodes)=\"changedCustomers($event)\">\n          </focus-tree-input>\n        </span>\n      </div>\n      <div class=\"report-filter__item\" *ngIf=\"loadedDates\">\n        <label>{{'FILTER-GLOBAL.period' | translate}}</label>\n        <div class=\"row\">\n          <div class=\"col-md-5 data-atalhos pr-0\">\n            \n            <span class=\"data-atalhos__atalho\" [ngClass]=\"{'data-atalhos__atalho--active' : selectedPeriodAtalho == 2}\"\n              (click)=\"updateDateRange(2)\">{{'FILTER-GLOBAL.lst_three_mths' | translate}}</span>\n\n            <span class=\"data-atalhos__atalho\" [ngClass]=\"{'data-atalhos__atalho--active' : selectedPeriodAtalho == 1}\" \n              (click)=\"updateDateRange(1)\">{{'FILTER-GLOBAL.lst_four_mths' | translate}}</span>\n            <!-- <span class=\"data-atalhos__atalho\" [ngClass]=\"{'data-atalhos__atalho--active' : selectedPeriodAtalho == 120}\"\n              (click)=\"updateDateRange(120)\">120 Dias</span> -->\n          </div>\n          <div class=\"col-md-7\">\n            <p-calendar [(ngModel)]=\"rangeDates\" selectionMode=\"range\" dateFormat=\"dd/mm/yy\" [readonlyInput]=\"true\" [maxDate]=\"maxDate\" (onSelect)=\"updateDateRange(0)\"></p-calendar>\n          </div>\n        </div>\n      </div>\n      <div class=\"report-filter__item\">\n        <label>{{'GLOBAL.type_alert' | translate}}</label>\n        <p-multiSelect [maxSelectedLabels]=1 [options]=\"selItemAlarmTypes\" [(ngModel)]=\"selectedAlertTypes\"\n            styleClass=\"pt-2 pb-0 select-fatigue\" [style]=\"{'width': '100%'}\" [panelStyle]=\"{minWidth:'26em', width:'200px'}\"\n            defaultLabel=\"Alarmes\"\n            selectedItemsLabel=\"{0} {{ 'GLOBAL.alert' | translate }} {{ 'GLOBAL.selecteds' | translate }}\">\n            <ng-template let-alarm pTemplate=\"item\" >\n                <div class=\"row\" style=\"width: 370px; display: inline-flex; margin-left: 1px;\">\n                    <div class=\"col-2\">\n                        <img src=\"{{alarm.icon}}\" style=\"height:30px;width:30px;display:inline-block;vertical-align:middle;\"/>\n                    </div>\n                    <div class=\"col-10 pl-0\">\n                        <div style=\"font-size:14px;margin-top:4px;\">{{alarm.label}}</div>\n                    </div>\n                </div>\n            </ng-template>\n        </p-multiSelect>\n      </div>\n      <div class=\"report-filter__item\">\n        <label>{{'FILTER-GLOBAL.report_type' | translate}}</label>\n        <p-dropdown [options]=\"selItemReportTypes\" [(ngModel)]=\"selectedReportType\" [style]=\"{'width': '100%'}\"></p-dropdown>\n      </div>\n      <div class=\"report-filter__item\">\n        <button [disabled]=\"creatingReport\" (click)=\"submitedFilter()\" class=\"report-filter__button\">{{'FILTER-GLOBAL.create_report' | translate}}</button>\n      </div>\n    </div>\n</nb-card>\n\n<div class=\"des\"></div>"
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/component/report-filter/report-filter.component.scss":
+/*!************************************************************************************!*\
+  !*** ./src/app/pages/reports/component/report-filter/report-filter.component.scss ***!
+  \************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = ".report-filter{display:flex;margin:1em}.report-filter--high-resolution{flex-direction:column}.report-filter__item{width:100%;margin-bottom:0.9em}.report-filter__item label{font-size:0.75em;color:#939cab;width:100%}.report-filter__button{border:0px;font-size:1em;padding:0.5em 1em;border-radius:0.5em;width:100%;cursor:pointer;background-color:#4B4B4D;color:#FFFFFF;transition:-webkit-filter ease 150ms;transition:filter ease 150ms;transition:filter ease 150ms, -webkit-filter ease 150ms}.report-filter__button:hover{-webkit-filter:brightness(1.3);filter:brightness(1.3)}:host ::ng-deep .ui-dropdown label.ui-dropdown-label{color:#4B4B4D}:host ::ng-deep .pi-caret-down:before{color:#4B4B4D}:host ::ng-deep .ui-multiselect .ui-multiselect-label{color:#4B4B4D}:host ::ng-deep .ui-state-default{background:transparent !important}:host ::ng-deep .ui-inputtext,:host ::ng-deep .ui-calendar{width:100%;cursor:pointer}:host ::ng-deep .ui-inputtext{padding:0.7em;background-color:white !important;cursor:text}:host ::ng-deep .ui-dropdown-panel .ui-dropdown-item{color:#4B4B4D !important}:host ::ng-deep .ui-dropdown-panel .ui-dropdown-item:not(.ui-state-highlight):not(.ui-state-disabled):hover{background-color:#E8E8E8 !important}.toolbar{width:100%;display:flex;flex-direction:row;flex-flow:wrap}.toolbar__sec{font-size:1.5em;display:flex;flex-grow:1;margin:0.7em 0.7em 0 0.7em;padding-bottom:0.3em;border-bottom:1px solid #eaeaea}.toolbar__sec p{margin-left:0.3em}.toolbar__sec p{margin-bottom:0px}.data-atalhos{display:flex;align-content:center}.data-atalhos__atalho{padding:0.2em 0.7em;font-size:0.75em;text-align:center;background-color:#EAEAEA;margin-right:0.5em;border-radius:0.5em;align-items:center;display:flex;cursor:pointer;transition:background-color ease 150ms}.data-atalhos__atalho:hover{background-color:#4B4B4Dd5;color:#fff}.data-atalhos__atalho--active{background-color:#4B4B4D;color:#fff}:host ::ng-deep .pi-chevron-left{color:#4B4B4D;font-weight:bold;transition:-webkit-filter ease 200ms;transition:filter ease 200ms;transition:filter ease 200ms, -webkit-filter ease 200ms}:host ::ng-deep .pi-chevron-right:before{color:#4B4B4D;font-weight:bold;transition:-webkit-filter ease 200ms;transition:filter ease 200ms;transition:filter ease 200ms, -webkit-filter ease 200ms}:host ::ng-deep .ui-datepicker .ui-datepicker-header a:hover{background-color:transparent;-webkit-filter:brightness(1.3);filter:brightness(1.3)}:host ::ng-deep .ui-widget-header{color:#4B4B4D}:host ::ng-deep .ui-datepicker-calendar td a.ui-state-active{background-color:rgba(204,64,64,0.835294) !important}:host ::ng-deep .tool-tip .tooltip-inner{background-color:#4B4B4D;font-size:13px;opacity:0.95}:host ::ng-deep .tool-tip .arrow::before{border-bottom-color:#4B4B4D;opacity:0.95}:host ::ng-deep .pi-search:before{color:#CC4040;font-size:20px;position:absolute;top:5px;left:230px}:host ::ng-deep.pi-check:before{background-color:#CC4040;color:#FFFFFF}:host ::ng-deep .ui-chkbox-box{background-color:white !important}:host ::ng-deep .ui-chkbox-box.ui-state-active{border:solid 1px #CC4040 !important;background:#CC4040 !important;color:#FFFFFF}img{opacity:0.8}\n"
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/component/report-filter/report-filter.component.ts":
+/*!**********************************************************************************!*\
+  !*** ./src/app/pages/reports/component/report-filter/report-filter.component.ts ***!
+  \**********************************************************************************/
+/*! exports provided: ReportFilterComponent */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ReportFilterComponent", function() { return ReportFilterComponent; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
+/* harmony import */ var app_core_data_data_service__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! app/@core/data/data.service */ "./src/app/@core/data/data.service.ts");
+/* harmony import */ var app_core_data_customer_service__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! app/@core/data/customer.service */ "./src/app/@core/data/customer.service.ts");
+/* harmony import */ var app_core_data_translate_json_service__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! app/@core/data/translate-json.service */ "./src/app/@core/data/translate-json.service.ts");
+/* harmony import */ var app_core_data_report_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! app/@core/data/report.service */ "./src/app/@core/data/report.service.ts");
+/* harmony import */ var app_core_utils_notification_util_service__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! app/@core/utils/notification.util.service */ "./src/app/@core/utils/notification.util.service.ts");
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (undefined && undefined.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (undefined && undefined.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+
+
+
+
+
+
+var ReportFilterComponent = /** @class */ (function () {
+    function ReportFilterComponent(dataService, customerService, translateService, reportService, notificationService) {
+        this.dataService = dataService;
+        this.customerService = customerService;
+        this.translateService = translateService;
+        this.reportService = reportService;
+        this.notificationService = notificationService;
+        this.submited = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["EventEmitter"]();
+        this.changed = new _angular_core__WEBPACK_IMPORTED_MODULE_0__["EventEmitter"]();
+        this.creatingReport = false;
+        this.selItemCustomerChild = [];
+        this.loadedCustomer = false;
+        this.loadedDates = false;
+        this.show = false;
+        this.selectedCustomers = [];
+        this.selectedStartDate = new Date();
+        this.selectedEndDate = new Date();
+        this.selectedAlertTypes = [1, 2, 3, 4, 6, 7, 8, 9];
+        this.selectedReportType = "resumeReport";
+        this.today = new Date();
+        this.periodAtalhos = { "30": true, "90": false, "120": false };
+        this.selectedPeriodAtalho = 30;
+        this.selItemReportTypes = this.reportService.reportTypes;
+    }
+    ReportFilterComponent.prototype.ngOnInit = function () {
+        this.loadData();
+    };
+    ReportFilterComponent.prototype.updateDateRange = function (atalho) {
+        this.selectedPeriodAtalho = atalho;
+        if (atalho == 1) {
+            var today = new Date();
+            today.setMonth(today.getMonth() - 1);
+            var lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            today.setMonth(today.getMonth() - 3);
+            var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            this.rangeDates = [firstDay, lastDay];
+        }
+        else if (atalho == 2) {
+            var today = new Date();
+            today.setMonth(today.getMonth() - 1);
+            var lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            today.setMonth(today.getMonth() - 2);
+            var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            this.rangeDates = [firstDay, lastDay];
+        }
+    };
+    ReportFilterComponent.prototype.loadData = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var wk, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        this.updateDateRange(2);
+                        wk = this.dataService.getWorkspace();
+                        if (!wk) return [3 /*break*/, 2];
+                        this.locate = this.translateService.getTranslateCalendar();
+                        this.selItemAlarmTypes = this.dataService.alarmTypesNumber;
+                        _a = this;
+                        return [4 /*yield*/, this.customerService.getCustomersChildInTreeInputFormat(wk.userCustomerChildIds.map(function (cc) { return cc.customer; }))];
+                    case 1:
+                        _a.selItemCustomerChild = _b.sent();
+                        this.loadedCustomer = true;
+                        this.loadedDates = true;
+                        return [3 /*break*/, 3];
+                    case 2:
+                        setTimeout(function () { _this.loadData(); }, 3000);
+                        _b.label = 3;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    ReportFilterComponent.prototype.submitedFilter = function () {
+        if (this.selectedCustomers.length > 0 && this.selectedAlertTypes.length > 0) {
+            this.reportService.setValues(this.selectedCustomers, this.rangeDates[0], this.rangeDates[1], this.selectedAlertTypes, this.selectedReportType);
+            this.submited.emit();
+            this.show = true;
+        }
+        else {
+            this.notificationService.printWarningMessage("Selecione todas as opções.");
+        }
+    };
+    ReportFilterComponent.prototype.changedCustomers = function (event) {
+        (event.length == 0) ? this.selectedCustomers = [] : this.selectedCustomers = event;
+    };
+    __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Output"])('submited'),
+        __metadata("design:type", _angular_core__WEBPACK_IMPORTED_MODULE_0__["EventEmitter"])
+    ], ReportFilterComponent.prototype, "submited", void 0);
+    __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Output"])('changed'),
+        __metadata("design:type", _angular_core__WEBPACK_IMPORTED_MODULE_0__["EventEmitter"])
+    ], ReportFilterComponent.prototype, "changed", void 0);
+    __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Input"])('creatingReport'),
+        __metadata("design:type", Boolean)
+    ], ReportFilterComponent.prototype, "creatingReport", void 0);
+    ReportFilterComponent = __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Component"])({
+            selector: 'report-filter',
+            template: __webpack_require__(/*! ./report-filter.component.html */ "./src/app/pages/reports/component/report-filter/report-filter.component.html"),
+            styles: [__webpack_require__(/*! ./report-filter.component.scss */ "./src/app/pages/reports/component/report-filter/report-filter.component.scss")]
+        }),
+        __metadata("design:paramtypes", [app_core_data_data_service__WEBPACK_IMPORTED_MODULE_1__["DataService"],
+            app_core_data_customer_service__WEBPACK_IMPORTED_MODULE_2__["CustomerService"],
+            app_core_data_translate_json_service__WEBPACK_IMPORTED_MODULE_3__["TranslateJsonService"],
+            app_core_data_report_service__WEBPACK_IMPORTED_MODULE_4__["ReportService"],
+            app_core_utils_notification_util_service__WEBPACK_IMPORTED_MODULE_5__["NotificationUtilService"]])
+    ], ReportFilterComponent);
+    return ReportFilterComponent;
+}());
+
+
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/report-days-or-hours/report-days-or-hours.component.html":
+/*!****************************************************************************************!*\
+  !*** ./src/app/pages/reports/report-days-or-hours/report-days-or-hours.component.html ***!
+  \****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = "<nb-card *ngIf=\"loadedChart; else loading\">\n<div style=\"padding: 1.5em; padding-top: 3em;\" id=\"report\">\n  <div class=\"row\">\n    <div class=\"col-md-12 report-content\">\n      <div class=\"report-header\">\n          <h1>Alertas x dia da semana</h1>\n          <h2>qtd alertas x dia da semana</h2>\n      </div>\n      <div id=\"reportOverviewChart\" [chartType]=\"googleChartType\" [chartOptions]=\"getOption()\" \n        [chartData]=\"days_data\" GoogleChart> \n      </div>\n    </div>    \n  </div>\n  <div class=\"row\" style=\"margin-top: 50px\">\n    <div class=\"col-md-12 report-content\">\n      <div class=\"report-header\">\n          <h1>Alertas x horário</h1>\n          <h2>qtd alertas x hora da ocorrência</h2>\n      </div>\n      <div id=\"reportOverviewCharte\" [chartType]=\"googleChartType\" [chartOptions]=\"getOption()\" \n        [chartData]=\"hours_data\" GoogleChart> \n      </div>\n      <span style=\"width: 100%;display: flex;font-size: 1em;justify-content: center;color: #545454;margin-top: -37px;\">Horas</span>\n    </div>\n  </div>\n</div>\n\n<div class=\"row\">\n  <div class=\"col-md-5 offset-md-7\">\n    <export-buttons (clickedPDF)=\"exportPDF()\" [loadingPdf]=\"loadingPdf\"></export-buttons>\n  </div>\n</div>\n</nb-card>\n\n<ng-template #loading>\n    <div class=\"col-md-12\" style=\"display: flex; justify-content: center; align-items: center;\">      \n      <svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"150px\" height=\"176px\" viewBox=\"0 -10 60 67\" version=\"1.1\">\n        <defs>\n        <clipPath id=\"barMask1\">\n            <rect x=\"10.2\" y=\"13.2\" width=\"24.6\" height=\"6\"/>\n        </clipPath>\n        <clipPath id=\"barMask2\">\n            <rect x=\"10.2\" y=\"25.2\" width=\"24.6\" height=\"6\"/>\n        </clipPath>\n        <clipPath id=\"barMask3\">\n            <rect x=\"22.2\" y=\"37.2\" width=\"12.6\" height=\"6\"/>\n        </clipPath>\n        <filter x=\"-50%\" y=\"-50%\" width=\"200%\" height=\"200%\" filterUnits=\"objectBoundingBox\" id=\"filter-1\">\n            <feOffset dx=\"0\" dy=\"2\" in=\"SourceAlpha\" result=\"shadowOffsetOuter1\"></feOffset>\n            <feGaussianBlur stdDeviation=\"2\" in=\"shadowOffsetOuter1\" result=\"shadowBlurOuter1\"></feGaussianBlur>\n            <feColorMatrix values=\"0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.105451766 0\" in=\"shadowBlurOuter1\" type=\"matrix\" result=\"shadowMatrixOuter1\"></feColorMatrix>\n            <feMerge>\n                <feMergeNode in=\"shadowMatrixOuter1\"></feMergeNode>\n                <feMergeNode in=\"SourceGraphic\"></feMergeNode>\n            </feMerge>\n        </filter>\n        </defs>\n    \n        <g fill=\"#fff\" fill-opacity=\"1\">\n        <path d=\"M0.0661196319 42.8 L1.30748466 44 L12.8519172 55.7 L14.0912117 56.9 L44.8634816 56.9 L44.8634816 0 L0.0661196319 0 L0.0661196319 42.8 Z M18.9212577 52.6 C13.8069939 52.6 16.3 40.4 16.3 40.4 C16.2717791 40.4 4.4 43.3 4.3 37.9 L4.29819018 4.3 L40.6315491 4.3 L40.6315491 52.6 L18.9212577 52.6 Z\" />\n        </g>\n        <g id=\"loadingLines\">\n        <g fill=\"#fff\" fill-opacity=\"0.7\">\n            <rect x=\"10.2\" y=\"13.2\" width=\"24.6\" height=\"6\"/>\n            <rect x=\"10.2\" y=\"25.2\" width=\"24.6\" height=\"6\"/>\n            <rect x=\"22.2\" y=\"37.2\" width=\"12.6\" height=\"6\"/>\n        </g>\n        <g fill=\"#1A81D5\">\n            <rect id=\"rect1\" x=\"-86\" y=\"13.2\" width=\"70\" height=\"6\" clip-path=\"url(#barMask1)\">\n            <animate attributeName=\"x\" from=\"-60\" to=\"80\" dur=\"3s\" begin=\"0s\" repeatCount=\"indefinite\"/>\n            </rect>\n            <rect id=\"rect2\" x=\"-112\" y=\"25.2\" width=\"70\" height=\"6\" clip-path=\"url(#barMask2)\">\n            <animate attributeName=\"x\" from=\"-60\" to=\"80\" dur=\"3s\" begin=\"0.6s\" repeatCount=\"indefinite\"/>\n            </rect>\n            <rect id=\"rect3\" x=\"-130\" y=\"37.2\" width=\"70\" height=\"6\" clip-path=\"url(#barMask3)\">\n            <animate attributeName=\"x\" from=\"-60\" to=\"80\" dur=\"3s\" begin=\"0.9s\" repeatCount=\"indefinite\"/>\n            </rect>\n        </g>\n        </g>\n      </svg>\n      \n    {{errMessage}}\n    </div>\n  </ng-template>"
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/report-days-or-hours/report-days-or-hours.component.scss":
+/*!****************************************************************************************!*\
+  !*** ./src/app/pages/reports/report-days-or-hours/report-days-or-hours.component.scss ***!
+  \****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = ".report-content{display:flex;flex-direction:column}.report-header{font-family:Arial;text-transform:uppercase;margin-bottom:1em}.report-header h1{font-size:1.7em;font-weight:bold;color:#4472C4}.report-header h2{font-size:1em;color:#999;margin-left:0.5em}.report-content h3{font-size:0.75em;color:#999;font-weight:bold;width:100%;margin-left:0.5em;position:absolute;left:5%}\n"
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/report-days-or-hours/report-days-or-hours.component.ts":
+/*!**************************************************************************************!*\
+  !*** ./src/app/pages/reports/report-days-or-hours/report-days-or-hours.component.ts ***!
+  \**************************************************************************************/
+/*! exports provided: ReportDaysOrHoursComponent */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ReportDaysOrHoursComponent", function() { return ReportDaysOrHoursComponent; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
+/* harmony import */ var app_core_data_report_service__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! app/@core/data/report.service */ "./src/app/@core/data/report.service.ts");
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
+/* harmony import */ var app_core_enum_days_name_enum__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! app/@core/enum/days-name.enum */ "./src/app/@core/enum/days-name.enum.ts");
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (undefined && undefined.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (undefined && undefined.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+
+
+
+
+var ReportDaysOrHoursComponent = /** @class */ (function () {
+    function ReportDaysOrHoursComponent(reportService, router) {
+        this.reportService = reportService;
+        this.router = router;
+        this.loadingPdf = false;
+        this.errMessage = '';
+        this.loadedChart = false;
+        this.googleChartType = 'ColumnChart';
+        this.days_data = [];
+        this.hours_data = [];
+        this.daysName = app_core_enum_days_name_enum__WEBPACK_IMPORTED_MODULE_3__["DaysName"];
+    }
+    ReportDaysOrHoursComponent.prototype.ngOnInit = function () {
+        this.loadData();
+    };
+    ReportDaysOrHoursComponent.prototype.loadData = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var CUSTOMER_CHILD, START_DATE, END_DATE, ALERT_TYPE;
+            return __generator(this, function (_a) {
+                CUSTOMER_CHILD = this.reportService.customersChild;
+                START_DATE = this.reportService.startDate;
+                END_DATE = this.reportService.endDate;
+                ALERT_TYPE = this.reportService.alertTypes;
+                if (CUSTOMER_CHILD.length < 1 || ALERT_TYPE.length < 1) {
+                    this.router.navigate(['/pages/reports']);
+                }
+                else {
+                    this.reportService.fetchDaysAndHoursReport(CUSTOMER_CHILD, START_DATE.toISOString(), END_DATE.toISOString(), ALERT_TYPE).then(function (result) {
+                        if (result.length < 1)
+                            throw Error('dados insuficientes');
+                        var data = result;
+                        _this.data = data;
+                        _this.creatingReport(['day', 'hour']);
+                        _this.loadedChart = true;
+                    }).catch(function (err) {
+                        _this.errMessage = "Não há dados suficientes para gerar o relatório.";
+                    });
+                }
+                return [2 /*return*/];
+            });
+        });
+    };
+    ReportDaysOrHoursComponent.prototype.creatingReport = function (reports) {
+        var _this = this;
+        this.reportService.setMomentLocale();
+        var data_reports = this.data.sort(function (n1, n2) { return new Date(n1.month).getTime() - new Date(n2.month).getTime(); });
+        reports.forEach(function (report) {
+            switch (report) {
+                case 'day':
+                    _this.createDayReport(data_reports);
+                    break;
+                case 'hour':
+                    _this.createHourReport(data_reports);
+                    break;
+            }
+        });
+    };
+    ReportDaysOrHoursComponent.prototype.createDayReport = function (data_reports) {
+        var _this = this;
+        var DATA = [['Dia', 'Alertas']];
+        data_reports[0].report_days_and_hours.days.forEach(function (_day) {
+            var column_day = [{ v: _day.day, f: _this.daysName[_day.day] }, _day.total_alerts];
+            DATA.push(column_day);
+        });
+        this.days_data = DATA;
+    };
+    ReportDaysOrHoursComponent.prototype.createHourReport = function (data_reports) {
+        var DATA = [['Hora', 'Alertas']];
+        data_reports[0].report_days_and_hours.hours.forEach(function (_hour) {
+            var column_hour = [_hour.hour, _hour.total_alerts];
+            DATA.push(column_hour);
+        });
+        this.hours_data = DATA;
+    };
+    ReportDaysOrHoursComponent.prototype.getOption = function () {
+        return {
+            chartArea: {
+                top: 5,
+                left: 50,
+                width: '90%',
+                height: '75%',
+                backgroundColor: {
+                    strokeWidth: 0,
+                    fill: 'transparent'
+                }
+            },
+            height: 350,
+            hAxis: {
+                gridlines: {
+                    color: 'transparent'
+                },
+                slantedText: true,
+                slantedTextAngle: 40,
+                ticks: [
+                    { v: 1, f: 'Domingo' },
+                    { v: 2, f: 'Segunda-Feira' },
+                    { v: 3, f: 'Terça-Feira' },
+                    { v: 4, f: 'Quarta-Feira' },
+                    { v: 5, f: 'Quinta-feira' },
+                    { v: 6, f: 'Sexta-Feira' },
+                    { v: 7, f: 'Sábado' }
+                ]
+            },
+            vAxis: {
+                viewWindowMode: 'explicit',
+                viewWindow: {
+                    min: 0
+                }
+            },
+            colors: ['#EC3439', '#EC3439'],
+            legend: { position: 'none' },
+            bar: { groupWidth: "45%", width: '30%' },
+            baselineColor: '#CCC',
+            backgroundColor: {
+                fill: 'transparent',
+            },
+        };
+    };
+    ReportDaysOrHoursComponent.prototype.exportPDF = function () {
+        var _this = this;
+        this.loadingPdf = true;
+        var images = [];
+        images.push(document.getElementById('report'));
+        this.reportService.saveReport(images, "Consolidado dos Alertas", this.reportService.startDate, this.reportService.endDate).then(function (result) {
+            _this.loadingPdf = false;
+        }).catch(function (erro) { return _this.loadingPdf = false; });
+    };
+    ReportDaysOrHoursComponent = __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Component"])({
+            selector: 'report-days-or-hours',
+            template: __webpack_require__(/*! ./report-days-or-hours.component.html */ "./src/app/pages/reports/report-days-or-hours/report-days-or-hours.component.html"),
+            styles: [__webpack_require__(/*! ./report-days-or-hours.component.scss */ "./src/app/pages/reports/report-days-or-hours/report-days-or-hours.component.scss")]
+        }),
+        __metadata("design:paramtypes", [app_core_data_report_service__WEBPACK_IMPORTED_MODULE_1__["ReportService"],
+            _angular_router__WEBPACK_IMPORTED_MODULE_2__["Router"]])
+    ], ReportDaysOrHoursComponent);
+    return ReportDaysOrHoursComponent;
+}());
+
+
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/report-resume/report-resume.component.html":
+/*!**************************************************************************!*\
+  !*** ./src/app/pages/reports/report-resume/report-resume.component.html ***!
+  \**************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = "<nb-card *ngIf=\"loadedChart; else loading\">\n<div style=\"padding: 1.5em; padding-top: 3em;\" id=\"report-resume-1\">\n  <div class=\"row\">\n    <div class=\"col-md-12 report-content\">\n      <div class=\"report-header\">\n          <h1>{{ 'REPORT-INDICATORS.global-vision' | translate }}</h1>\n          <h2>{{ 'REPORT-INDICATORS.amount-alertTypes-month' | translate }}</h2>\n      </div>\n      <div id=\"reportOverviewChart\" [chartType]=\"googleChartType\" [chartOptions]=\"getOption('overview')\" \n        [chartData]=\"getData('overview', '1')\" style=\"height: 315px\" GoogleChart>\n      </div>\n    </div>\n  </div>\n\n  <div class=\"row\">\n    <div class=\"col-md-12 report-content\" style=\"margin-top: 5em;\">\n      <div class=\"report-header\">\n          <h1>{{ 'REPORT-INDICATORS.monthlyAlerts-units' | translate }}</h1>\n          <h2>{{ 'REPORT-INDICATORS.amount-alertTypes-unit' | translate }}</h2>\n      </div>\n      <div id=\"reportOverviewChartAll\" [chartType]=\"googleChartType\" [chartOptions]=\"getOption('overviewAll')\" \n        [chartData]=\"getData('overviewAll', '1')\" style=\"height: 315px\" GoogleChart>\n      </div>\n    </div>\n  </div>\n\n  <div class=\"row\">\n    <div class=\"col-md-12 report-content\" style=\"margin-top: 5em;\">\n      <div class=\"report-header\">\n          <h1>{{ 'REPORT-INDICATORS.monthlyAlerts-units' | translate }}</h1>\n          <h2>{{ 'REPORT-INDICATORS.amount-month-unit' | translate }}</h2>\n      </div>\n      <div id=\"overviewAllByMonth\" [chartType]=\"googleChartType\" [chartOptions]=\"getOption('overviewAllByMonth')\" \n        [chartData]=\"getData('overviewAllByMonth', '1')\" style=\"height: 315px\" GoogleChart>\n      </div>\n    </div>\n  </div>\n  <div class=\"row\">\n    <div class=\"col-md-12 report-content\" style=\"margin-top: 5em;\">\n      <div class=\"report-header\">\n          <h1>{{ 'REPORT-INDICATORS.averageAlerts-units' | translate }}</h1>\n          <h2>{{ 'REPORT-INDICATORS.averageAmount-month-unit' | translate }}</h2>\n      </div>\n      <div id=\"overviewMedioByMonth\" [chartType]=\"googleChartType\" [chartOptions]=\"getOption('overviewMedioByMonth')\" \n        [chartData]=\"getData('overviewMedioByMonth', '1')\" style=\"height: 315px\" GoogleChart>\n      </div>\n    </div>\n  </div>\n</div>\n\n<div class=\"row\">\n  <div class=\"col-md-5 offset-md-7\">\n    <export-buttons (clickedPDF)=\"exportPDF()\" [loadingPdf]=\"loadingPdf\"></export-buttons>\n  </div>\n</div>\n</nb-card>\n\n<ng-template #loading>\n    <div class=\"col-md-12\" style=\"display: flex; justify-content: center; align-items: center;\">      \n      <svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"150px\" height=\"176px\" viewBox=\"0 -10 60 67\" version=\"1.1\">\n        <defs>\n        <clipPath id=\"barMask1\">\n            <rect x=\"10.2\" y=\"13.2\" width=\"24.6\" height=\"6\"/>\n        </clipPath>\n        <clipPath id=\"barMask2\">\n            <rect x=\"10.2\" y=\"25.2\" width=\"24.6\" height=\"6\"/>\n        </clipPath>\n        <clipPath id=\"barMask3\">\n            <rect x=\"22.2\" y=\"37.2\" width=\"12.6\" height=\"6\"/>\n        </clipPath>\n        <filter x=\"-50%\" y=\"-50%\" width=\"200%\" height=\"200%\" filterUnits=\"objectBoundingBox\" id=\"filter-1\">\n            <feOffset dx=\"0\" dy=\"2\" in=\"SourceAlpha\" result=\"shadowOffsetOuter1\"></feOffset>\n            <feGaussianBlur stdDeviation=\"2\" in=\"shadowOffsetOuter1\" result=\"shadowBlurOuter1\"></feGaussianBlur>\n            <feColorMatrix values=\"0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.105451766 0\" in=\"shadowBlurOuter1\" type=\"matrix\" result=\"shadowMatrixOuter1\"></feColorMatrix>\n            <feMerge>\n                <feMergeNode in=\"shadowMatrixOuter1\"></feMergeNode>\n                <feMergeNode in=\"SourceGraphic\"></feMergeNode>\n            </feMerge>\n        </filter>\n        </defs>\n    \n        <g fill=\"#fff\" fill-opacity=\"1\">\n        <path d=\"M0.0661196319 42.8 L1.30748466 44 L12.8519172 55.7 L14.0912117 56.9 L44.8634816 56.9 L44.8634816 0 L0.0661196319 0 L0.0661196319 42.8 Z M18.9212577 52.6 C13.8069939 52.6 16.3 40.4 16.3 40.4 C16.2717791 40.4 4.4 43.3 4.3 37.9 L4.29819018 4.3 L40.6315491 4.3 L40.6315491 52.6 L18.9212577 52.6 Z\" />\n        </g>\n        <g id=\"loadingLines\">\n        <g fill=\"#fff\" fill-opacity=\"0.7\">\n            <rect x=\"10.2\" y=\"13.2\" width=\"24.6\" height=\"6\"/>\n            <rect x=\"10.2\" y=\"25.2\" width=\"24.6\" height=\"6\"/>\n            <rect x=\"22.2\" y=\"37.2\" width=\"12.6\" height=\"6\"/>\n        </g>\n        <g fill=\"#1A81D5\">\n            <rect id=\"rect1\" x=\"-86\" y=\"13.2\" width=\"70\" height=\"6\" clip-path=\"url(#barMask1)\">\n            <animate attributeName=\"x\" from=\"-60\" to=\"80\" dur=\"3s\" begin=\"0s\" repeatCount=\"indefinite\"/>\n            </rect>\n            <rect id=\"rect2\" x=\"-112\" y=\"25.2\" width=\"70\" height=\"6\" clip-path=\"url(#barMask2)\">\n            <animate attributeName=\"x\" from=\"-60\" to=\"80\" dur=\"3s\" begin=\"0.6s\" repeatCount=\"indefinite\"/>\n            </rect>\n            <rect id=\"rect3\" x=\"-130\" y=\"37.2\" width=\"70\" height=\"6\" clip-path=\"url(#barMask3)\">\n            <animate attributeName=\"x\" from=\"-60\" to=\"80\" dur=\"3s\" begin=\"0.9s\" repeatCount=\"indefinite\"/>\n            </rect>\n        </g>\n        </g>\n      </svg>\n\n      {{errMessage}}\n    </div>\n  </ng-template>"
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/report-resume/report-resume.component.scss":
+/*!**************************************************************************!*\
+  !*** ./src/app/pages/reports/report-resume/report-resume.component.scss ***!
+  \**************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = ".report-content{display:flex;flex-direction:column}.report-header{font-family:Arial;text-transform:uppercase;margin-bottom:1em}.report-header h1{font-size:1.7em;font-weight:bold;color:#4472C4}.report-header h2{font-size:1em;color:#999;margin-left:0.5em}.report-content h3{font-size:0.75em;color:#999;font-weight:bold;width:100%;margin-left:0.5em;position:absolute;left:5%}\n"
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/report-resume/report-resume.component.ts":
+/*!************************************************************************!*\
+  !*** ./src/app/pages/reports/report-resume/report-resume.component.ts ***!
+  \************************************************************************/
+/*! exports provided: ReportResumeComponent */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ReportResumeComponent", function() { return ReportResumeComponent; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
+/* harmony import */ var app_core_data_report_service__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! app/@core/data/report.service */ "./src/app/@core/data/report.service.ts");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! moment */ "./node_modules/moment/moment.js");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(moment__WEBPACK_IMPORTED_MODULE_3__);
+/* harmony import */ var app_core_enum_alarm_type_enum__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! app/@core/enum/alarm-type.enum */ "./src/app/@core/enum/alarm-type.enum.ts");
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (undefined && undefined.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (undefined && undefined.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+
+
+
+
+
+var ReportResumeComponent = /** @class */ (function () {
+    function ReportResumeComponent(reportService, router) {
+        this.reportService = reportService;
+        this.router = router;
+        this.errMessage = '';
+        this.loadingPdf = false;
+        this.alarmTypeEnum = app_core_enum_alarm_type_enum__WEBPACK_IMPORTED_MODULE_4__["AlarmTypeEnum"];
+        this.googleChartType = 'ColumnChart';
+        this.loadedChart = false;
+        this.data_chart = [];
+    }
+    ReportResumeComponent.prototype.ngOnInit = function () {
+        this.loadData();
+    };
+    ReportResumeComponent.prototype.loadData = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var CUSTOMER_CHILD, START_DATE, END_DATE, ALERT_TYPE;
+            return __generator(this, function (_a) {
+                CUSTOMER_CHILD = this.reportService.customersChild;
+                START_DATE = this.reportService.startDate;
+                END_DATE = this.reportService.endDate;
+                ALERT_TYPE = this.reportService.alertTypes;
+                if (CUSTOMER_CHILD.length < 1 || ALERT_TYPE.length < 1) {
+                    this.router.navigate(['/pages/reports']);
+                }
+                else {
+                    /* const data: ReportMonths[] = await this.reportService.fetchResumeReport(CUSTOMER_CHILD, START_DATE.toISOString(), END_DATE.toISOString(), ALERT_TYPE);
+                    this.data = data;
+              
+                    this.creatingReport(['overview','overviewAll','overviewAllByMonth','overviewMedioByMonth']); */
+                    this.reportService.fetchResumeReport(CUSTOMER_CHILD, START_DATE.toISOString(), END_DATE.toISOString(), ALERT_TYPE).then(function (result) {
+                        if (result.length < 1)
+                            throw Error('dados insuficientes');
+                        var data = result;
+                        _this.data = data;
+                        _this.creatingReport(['overview', 'overviewAll', 'overviewAllByMonth', 'overviewMedioByMonth']);
+                        _this.loadedChart = true;
+                    }).catch(function (err) {
+                        _this.errMessage = "Não há dados suficientes para gerar o relatório.";
+                    });
+                }
+                return [2 /*return*/];
+            });
+        });
+    };
+    ReportResumeComponent.prototype.creatingReport = function (reports) {
+        var _this = this;
+        this.reportService.setMomentLocale();
+        var data_reports = this.data.sort(function (n1, n2) { return new Date(n1.month).getTime() - new Date(n2.month).getTime(); });
+        var TICKS = this.reportService.createTicks(data_reports);
+        reports.forEach(function (report) {
+            switch (report) {
+                case 'overview':
+                    _this.createOverviewReport(data_reports, 'overview', TICKS);
+                    break;
+                case 'overviewAll':
+                    _this.createOverviewAllReprot(data_reports, 'overviewAll', TICKS);
+                    break;
+                case 'overviewAllByMonth':
+                    _this.createOverviewAllByMonth(data_reports, 'overviewAllByMonth', TICKS);
+                    break;
+                case 'overviewMedioByMonth':
+                    _this.createOverviewMedioByMonth(data_reports, 'overviewMedioByMonth', TICKS);
+                    break;
+            }
+        });
+    };
+    ReportResumeComponent.prototype.createOverviewMedioByMonth = function (data_reports, reportType, ticks) {
+        var _this = this;
+        var OPTIONS = this.getOptions(ticks, true);
+        var header = ['Month'];
+        var columns = [];
+        data_reports.forEach(function (month) {
+            var column_month = [{ v: new Date(month.month), f: moment__WEBPACK_IMPORTED_MODULE_3__(month.month).format('MMMM / YY') }];
+            month.customers_child.forEach(function (customer) {
+                if (!header.includes(customer.name)) {
+                    header.push(customer.name);
+                    header.push({ role: 'annotation' });
+                }
+                var media = _this.calcMedia(customer.total_alerts, customer.total_devices);
+                column_month.push(media);
+                column_month.push(media);
+            });
+            columns.push(column_month);
+        });
+        if (columns.length < 2) {
+            var teste = [];
+            for (var j = 0; j < columns[0].length; j++) {
+                teste.push(0);
+            }
+            columns.push(teste);
+        }
+        columns.splice(0, 0, header);
+        var DATA = [{ "id": 1, "name": "Todas Filiais", "columns": columns }];
+        this.verifyReportDataExists(reportType, DATA, OPTIONS);
+        //console.log(DATA);
+    };
+    ReportResumeComponent.prototype.createOverviewAllByMonth = function (data_reports, reportType, ticks) {
+        var OPTIONS = this.getOptions(ticks, true);
+        var header = ['Month'];
+        var columns = [];
+        data_reports.forEach(function (month) {
+            var column_month = [{ v: new Date(month.month), f: moment__WEBPACK_IMPORTED_MODULE_3__(month.month).format('MMMM / YY') }];
+            month.customers_child.forEach(function (customer) {
+                if (!header.includes(customer.name)) {
+                    header.push(customer.name);
+                    header.push({ role: 'annotation' });
+                }
+                column_month.push(customer.total_alerts);
+                column_month.push(customer.total_alerts);
+            });
+            columns.push(column_month);
+        });
+        if (columns.length < 2) {
+            var teste = [];
+            for (var j = 0; j < columns[0].length; j++) {
+                teste.push(0);
+            }
+            columns.push(teste);
+        }
+        columns.splice(0, 0, header);
+        var DATA = [{ "id": 1, "name": "Todas Filiais", "columns": columns }];
+        this.verifyReportDataExists(reportType, DATA, OPTIONS);
+    };
+    ReportResumeComponent.prototype.createOverviewAllReprot = function (data_reports, reportType, ticks) {
+        var _this = this;
+        var OPTIONS = this.getOptions(ticks);
+        var header = ['Filial'];
+        var customer_data = [];
+        data_reports.forEach(function (month) {
+            month.customers_child.forEach(function (customer) {
+                customer.count_alert_type.forEach(function (count_alert) {
+                    var findedCustomerData = customer_data.find(function (cd) { return cd.id == customer.id; });
+                    if (!findedCustomerData) {
+                        findedCustomerData = { "id": customer.id, "name": customer.name, "count_alerts": [] };
+                        customer_data.push(findedCustomerData);
+                    }
+                    var findedAlert = findedCustomerData.count_alerts.find(function (alert) { return alert.alert_type == count_alert.alert_type; });
+                    if (findedAlert) {
+                        findedAlert.count = findedAlert.count + count_alert.count;
+                    }
+                    else {
+                        findedCustomerData.count_alerts.push({ "alert_type": count_alert.alert_type, "count": count_alert.count });
+                    }
+                    if (!header.includes(_this.alarmTypeEnum[count_alert.alert_type])) {
+                        header.push(_this.alarmTypeEnum[count_alert.alert_type]);
+                        header.push({ role: 'annotation' });
+                    }
+                });
+            });
+        });
+        var COLUMN = [header];
+        customer_data.forEach(function (customerData) {
+            var t = [];
+            customerData.count_alerts.forEach(function (alert) { t.push(alert.count); t.push(alert.count); });
+            t.splice(0, 0, customerData.name);
+            COLUMN.push(t);
+        });
+        var DATA = [{ "id": 1, "name": "Todas Filiais", "columns": COLUMN }];
+        this.verifyReportDataExists(reportType, DATA, OPTIONS);
+    };
+    ReportResumeComponent.prototype.createOverviewReport = function (data_reports, reportType, ticks) {
+        var _this = this;
+        var OPTIONS = this.getOptions(ticks);
+        var header = ['Month'];
+        var items = [];
+        data_reports.forEach(function (data, j) {
+            var count_types = [];
+            data.customers_child.forEach(function (customer, i) {
+                customer.count_alert_type.forEach(function (c_alert_type) {
+                    var findedType = count_types.find(function (_alert_type) { return _alert_type.alert_type == c_alert_type.alert_type; });
+                    if (findedType) {
+                        findedType.count = findedType.count + c_alert_type.count;
+                    }
+                    else {
+                        count_types.push({ "alert_type": c_alert_type.alert_type, "count": c_alert_type.count });
+                        if (!header.includes(_this.alarmTypeEnum[c_alert_type.alert_type])) {
+                            header.push(_this.alarmTypeEnum[c_alert_type.alert_type]);
+                            header.push({ role: 'annotation' });
+                        }
+                    }
+                });
+            });
+            var month = [{ v: new Date(data.month), f: moment__WEBPACK_IMPORTED_MODULE_3__(data.month).format('MMMM / YY') }];
+            count_types.forEach(function (types) { month.push(types.count); month.push(types.count.toString()); });
+            items.push(month);
+        });
+        var final = [header];
+        items.forEach(function (item) { final.push(item); console.log(item); });
+        // BUG FIX: Relatório com 1 mês apenas fica quebrado
+        if (final.length < 3) {
+            var teste = [];
+            for (var j = 0; j < items[0].length; j++) {
+                teste.push(0);
+            }
+            final.push(teste);
+        }
+        var DATA = [{ "id": 1, "name": "Todas Filiais", "columns": final }];
+        this.verifyReportDataExists(reportType, DATA, OPTIONS);
+        console.log(JSON.stringify(this.data_chart));
+    };
+    ReportResumeComponent.prototype.getOptions = function (_ticks, simpleStyle) {
+        if (simpleStyle) {
+            return {
+                chartArea: {
+                    top: 50,
+                    left: 50,
+                    width: '90%',
+                    height: '75%',
+                    backgroundColor: {
+                        strokeWidth: 0,
+                        fill: 'transparent'
+                    }
+                },
+                annotations: {
+                    alwaysOutside: true,
+                    textStyle: {
+                        fontSize: 14,
+                        color: '#000',
+                        auraColor: 'none'
+                    }
+                },
+                hAxis: {
+                    ticks: _ticks,
+                    gridlines: {
+                        color: 'transparent'
+                    }
+                },
+                vAxis: {
+                    gridlines: {
+                        color: 'transparent'
+                    }
+                },
+                bar: { groupWidth: "75%", width: '55%' },
+                colors: [
+                    '#5B9BD5',
+                    '#ED7D31',
+                    '#92D050'
+                ],
+                baselineColor: '#CCC',
+                legend: { position: 'top', maxLines: 3, alignment: 'center' },
+                backgroundColor: {
+                    fill: 'transparent',
+                },
+            };
+        }
+        else {
+            return {
+                chartArea: {
+                    top: 5,
+                    left: 50,
+                    width: '85%',
+                    height: '85%',
+                    backgroundColor: {
+                        strokeWidth: 0,
+                        fill: 'transparent'
+                    }
+                },
+                annotations: {
+                    alwaysOutside: true,
+                    textStyle: {
+                        fontSize: 14,
+                        color: '#000',
+                        auraColor: 'none'
+                    },
+                    boxStyle: {
+                        strokeWidth: 0,
+                        gradient: {
+                            color1: '#FFF',
+                            color2: '#FFF'
+                        }
+                    },
+                },
+                hAxis: {
+                    ticks: _ticks,
+                    gridlines: {
+                        color: 'transparent'
+                    }
+                },
+                vAxis: {
+                    gridlines: {
+                        color: 'transparent'
+                    }
+                },
+                bar: { groupWidth: "75%", width: '65%' },
+                colors: [
+                    '#4472C4',
+                    '#ED7D31',
+                    '#A5A5A5',
+                    '#FFC000',
+                    '#5B9BD5',
+                    '#70AD47',
+                    '#264478',
+                    '#9E480E'
+                ],
+                baselineColor: '#CCC',
+                backgroundColor: {
+                    fill: 'transparent',
+                },
+            };
+        }
+    };
+    ReportResumeComponent.prototype.verifyReportDataExists = function (reportType, data, options) {
+        var finded = this.data_chart.find(function (data) { return data.report_type == reportType; });
+        if (!finded) {
+            this.data_chart.push({ "report_type": reportType, "data": data, "options": options });
+        }
+        else {
+            finded.data.push(data);
+        }
+    };
+    ReportResumeComponent.prototype.getData = function (reportType, itemId) {
+        var finded = this.data_chart.find(function (data) { return data.report_type == reportType; });
+        if (finded) {
+            return (itemId) ? finded.data.find(function (data) { return data.id == itemId; }).columns : finded.data;
+        }
+        else {
+            console.log("O sistema não conseguiu encontrar o gráfico " + reportType);
+        }
+    };
+    ReportResumeComponent.prototype.getOption = function (reportType, color) {
+        var finded = this.data_chart.find(function (data) { return data.report_type == reportType; });
+        if (finded) {
+            return finded.options;
+        }
+        else {
+            console.log("O sistema não conseguiu encontrar o gráfico " + reportType);
+        }
+    };
+    ReportResumeComponent.prototype.calcMedia = function (n1, n2) {
+        return Number((n1 / n2).toFixed(1));
+    };
+    ReportResumeComponent.prototype.exportPDF = function () {
+        var _this = this;
+        this.loadingPdf = true;
+        var images = [];
+        images.push(document.getElementById('report-resume-1'));
+        this.reportService.saveReport(images, "Resumo dos Alertas", this.reportService.startDate, this.reportService.endDate).then(function (result) {
+            _this.loadingPdf = false;
+        }).catch(function (erro) { return _this.loadingPdf = false; });
+    };
+    ReportResumeComponent = __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Component"])({
+            selector: 'report-resume',
+            template: __webpack_require__(/*! ./report-resume.component.html */ "./src/app/pages/reports/report-resume/report-resume.component.html"),
+            styles: [__webpack_require__(/*! ./report-resume.component.scss */ "./src/app/pages/reports/report-resume/report-resume.component.scss")]
+        }),
+        __metadata("design:paramtypes", [app_core_data_report_service__WEBPACK_IMPORTED_MODULE_2__["ReportService"],
+            _angular_router__WEBPACK_IMPORTED_MODULE_1__["Router"]])
+    ], ReportResumeComponent);
+    return ReportResumeComponent;
+}());
+
+
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/report-treat/report-treat.component.html":
+/*!************************************************************************!*\
+  !*** ./src/app/pages/reports/report-treat/report-treat.component.html ***!
+  \************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = "<nb-card *ngIf=\"loadedChart; else loading\">\n<div style=\"padding: 1.5em; padding-top: 1.5em;\" id=\"report-treat-1\">\n  <div class=\"row\">\n    <div class=\"col-md-12 report-content\">\n      <div class=\"report-header\">\n          <h1>Tratativas Implementadas</h1>\n          <h2>QTD Tratativas x Tipo</h2>\n      </div>\n      <div id=\"reportTrendChart\" [chartType]=\"googleChartType\" [chartOptions]=\"getOption('treatments')\" \n        [chartData]=\"getData('treatments', '1')\" style=\"height: 315px\" GoogleChart>\n      </div>\n    </div>    \n  </div>  \n  <div class=\"row\" style=\"margin-top: 20px;\">\n    <div class=\"col-md-12 report-content\">\n      <div class=\"report-header\">\n        <h1>Top 10 Motoristas</h1>\n        <h2>QTD de Tratativas x Motorista</h2>\n      </div>\n      <!--\n      <div class=\"topDrivers\">\n        <ul>\n          <li *ngFor=\"let month of top_drivers\" class=\"top-drivers__month\">\n            <span><i class=\"fa fa-calendar-o\" aria-hidden=\"true\"></i> {{month.month}}</span> \n            <ul>\n              <li *ngFor=\"let driver of month.drivers | slice:0:8;\" class=\"top-drivers__driver\">\n               <span>{{driver.total_audits}}</span>  {{driver.driver_name}}\n              </li>\n            </ul>\n          </li>\n        </ul>\n      </div> \n    -->\n\n      <div class=\"topDrivers\">\n        <div *ngFor=\"let month of top_drivers\" class=\"top-drivers__month\" style=\"width: 31.5%; float: left; margin-right: 1%\">\n            <span><i class=\"fa fa-calendar-o\" aria-hidden=\"true\"></i> {{month.month}}</span> \n            <ul>\n              <li *ngFor=\"let driver of month.drivers | slice:0:10;\" class=\"top-drivers__driver\">\n              <span>{{driver.total_audits}}</span>  {{driver.driver_name}}\n              </li>\n            </ul>\n        </div>                    \n      </div>\n\n    </div>\n  </div>\n</div>\n\n<div class=\"row\">\n  <div class=\"col-md-5 offset-md-7\">\n    <export-buttons (clickedPDF)=\"exportPDF()\" [loadingPdf]=\"loadingPdf\"></export-buttons>\n  </div>\n</div>\n</nb-card>\n\n<ng-template #loading>\n  <div class=\"col-md-12\" style=\"display: flex; justify-content: center; align-items: center;\">      \n    <svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"150px\" height=\"176px\" viewBox=\"0 -10 60 67\" version=\"1.1\">\n      <defs>\n      <clipPath id=\"barMask1\">\n          <rect x=\"10.2\" y=\"13.2\" width=\"24.6\" height=\"6\"/>\n      </clipPath>\n      <clipPath id=\"barMask2\">\n          <rect x=\"10.2\" y=\"25.2\" width=\"24.6\" height=\"6\"/>\n      </clipPath>\n      <clipPath id=\"barMask3\">\n          <rect x=\"22.2\" y=\"37.2\" width=\"12.6\" height=\"6\"/>\n      </clipPath>\n      <filter x=\"-50%\" y=\"-50%\" width=\"200%\" height=\"200%\" filterUnits=\"objectBoundingBox\" id=\"filter-1\">\n          <feOffset dx=\"0\" dy=\"2\" in=\"SourceAlpha\" result=\"shadowOffsetOuter1\"></feOffset>\n          <feGaussianBlur stdDeviation=\"2\" in=\"shadowOffsetOuter1\" result=\"shadowBlurOuter1\"></feGaussianBlur>\n          <feColorMatrix values=\"0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.105451766 0\" in=\"shadowBlurOuter1\" type=\"matrix\" result=\"shadowMatrixOuter1\"></feColorMatrix>\n          <feMerge>\n              <feMergeNode in=\"shadowMatrixOuter1\"></feMergeNode>\n              <feMergeNode in=\"SourceGraphic\"></feMergeNode>\n          </feMerge>\n      </filter>\n      </defs>\n  \n      <g fill=\"#fff\" fill-opacity=\"1\">\n      <path d=\"M0.0661196319 42.8 L1.30748466 44 L12.8519172 55.7 L14.0912117 56.9 L44.8634816 56.9 L44.8634816 0 L0.0661196319 0 L0.0661196319 42.8 Z M18.9212577 52.6 C13.8069939 52.6 16.3 40.4 16.3 40.4 C16.2717791 40.4 4.4 43.3 4.3 37.9 L4.29819018 4.3 L40.6315491 4.3 L40.6315491 52.6 L18.9212577 52.6 Z\" />\n      </g>\n      <g id=\"loadingLines\">\n      <g fill=\"#fff\" fill-opacity=\"0.7\">\n          <rect x=\"10.2\" y=\"13.2\" width=\"24.6\" height=\"6\"/>\n          <rect x=\"10.2\" y=\"25.2\" width=\"24.6\" height=\"6\"/>\n          <rect x=\"22.2\" y=\"37.2\" width=\"12.6\" height=\"6\"/>\n      </g>\n      <g fill=\"#1A81D5\">\n          <rect id=\"rect1\" x=\"-86\" y=\"13.2\" width=\"70\" height=\"6\" clip-path=\"url(#barMask1)\">\n          <animate attributeName=\"x\" from=\"-60\" to=\"80\" dur=\"3s\" begin=\"0s\" repeatCount=\"indefinite\"/>\n          </rect>\n          <rect id=\"rect2\" x=\"-112\" y=\"25.2\" width=\"70\" height=\"6\" clip-path=\"url(#barMask2)\">\n          <animate attributeName=\"x\" from=\"-60\" to=\"80\" dur=\"3s\" begin=\"0.6s\" repeatCount=\"indefinite\"/>\n          </rect>\n          <rect id=\"rect3\" x=\"-130\" y=\"37.2\" width=\"70\" height=\"6\" clip-path=\"url(#barMask3)\">\n          <animate attributeName=\"x\" from=\"-60\" to=\"80\" dur=\"3s\" begin=\"0.9s\" repeatCount=\"indefinite\"/>\n          </rect>\n      </g>\n      </g>\n    </svg>\n\n    {{errMessage}}\n  </div>\n</ng-template>"
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/report-treat/report-treat.component.scss":
+/*!************************************************************************!*\
+  !*** ./src/app/pages/reports/report-treat/report-treat.component.scss ***!
+  \************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = ".report-content{display:flex;flex-direction:column}.report-header{font-family:Arial;text-transform:uppercase;margin-bottom:1em}.report-header h1{font-size:1.7em;font-weight:bold;color:#4472C4}.report-header h2{font-size:1em;color:#999;margin-left:0.5em}.report-content h3{font-size:0.75em;color:#999;font-weight:bold;width:100%;margin-left:0.5em;position:absolute;left:5%}.top-drivers__month{width:100%;background-color:#f5f4f4;list-style:none;padding:0.8em}.top-drivers__month span{display:flex;flex-direction:row;font-weight:bold;margin-top:0.2em}.top-drivers__month span i{margin-right:0.5em}.top-drivers__driver{width:100%;list-style:none;margin:0.3em;margin-left:0px;display:flex;align-items:center}.top-drivers__driver span{background-color:#4472c4;border-radius:50%;color:#FFF;padding:0.5em;font-size:0.8em;font-weight:400;margin-right:0.5em}.top-drivers__driver:nth-child(2n+1){background:#e6e6e6;border-radius:15px 0 0 15px}\n"
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/report-treat/report-treat.component.ts":
+/*!**********************************************************************!*\
+  !*** ./src/app/pages/reports/report-treat/report-treat.component.ts ***!
+  \**********************************************************************/
+/*! exports provided: ReportTreatComponent */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ReportTreatComponent", function() { return ReportTreatComponent; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
+/* harmony import */ var app_core_data_report_service__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! app/@core/data/report.service */ "./src/app/@core/data/report.service.ts");
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! moment */ "./node_modules/moment/moment.js");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(moment__WEBPACK_IMPORTED_MODULE_3__);
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (undefined && undefined.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (undefined && undefined.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+
+
+
+
+var ReportTreatComponent = /** @class */ (function () {
+    function ReportTreatComponent(reportService, router) {
+        this.reportService = reportService;
+        this.router = router;
+        this.googleChartType = 'ColumnChart';
+        this.errMessage = '';
+        this.loadedChart = false;
+        this.loadingPdf = false;
+        this.data_chart = [];
+    }
+    ReportTreatComponent.prototype.ngOnInit = function () {
+        this.loadData();
+    };
+    ReportTreatComponent.prototype.loadData = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var CUSTOMER_CHILD, START_DATE, END_DATE, ALERT_TYPE;
+            return __generator(this, function (_a) {
+                CUSTOMER_CHILD = this.reportService.customersChild;
+                START_DATE = this.reportService.startDate;
+                END_DATE = this.reportService.endDate;
+                ALERT_TYPE = this.reportService.alertTypes;
+                if (CUSTOMER_CHILD.length < 1 || ALERT_TYPE.length < 1) {
+                    this.router.navigate(['/pages/reports']);
+                }
+                else {
+                    /* const data: ReportMonths[] = await this.reportService.fetchTreatsReport(CUSTOMER_CHILD, START_DATE.toISOString(), END_DATE.toISOString(), ALERT_TYPE);
+                    this.data = data;
+                    this.creatingReport(['treatments', 'topDrivers']); */
+                    this.reportService.fetchTreatsReport(CUSTOMER_CHILD, START_DATE.toISOString(), END_DATE.toISOString(), ALERT_TYPE).then(function (result) {
+                        if (result.length < 1)
+                            throw Error('dados insuficientes');
+                        var data = result;
+                        _this.data = data;
+                        _this.creatingReport(['treatments', 'topDrivers']);
+                        _this.loadedChart = true;
+                    }).catch(function (err) {
+                        _this.errMessage = "Não há dados suficientes para gerar o relatório.";
+                    });
+                }
+                return [2 /*return*/];
+            });
+        });
+    };
+    ReportTreatComponent.prototype.creatingReport = function (reports) {
+        var _this = this;
+        reports.forEach(function (report) {
+            switch (report) {
+                case 'treatments':
+                    _this.createTreatsReport(_this.data, 'treatments');
+                    break;
+                case 'topDrivers':
+                    _this.createTopDrivers(_this.data);
+                    break;
+            }
+        });
+    };
+    ReportTreatComponent.prototype.createTreatsReport = function (data_reports, reportType) {
+        this.reportService.setMomentLocale();
+        var OPTIONS = this.getOptions();
+        var data = this.data.sort(function (n1, n2) { return new Date(n1.month).getTime() - new Date(n2.month).getTime(); });
+        var column = [['Audit', 'Quantidade', { role: 'annotation' }]];
+        data.forEach(function (month) {
+            month.audits.forEach(function (audit) {
+                var finded = column.find(function (column) { return column[0] == audit.name; });
+                if (finded) {
+                    audit.customers_child.forEach(function (customer) {
+                        finded[1] = finded[1] + customer.total_audits;
+                    });
+                }
+                else {
+                    var total_audit_1 = 0;
+                    audit.customers_child.forEach(function (customer) {
+                        total_audit_1 = total_audit_1 + customer.total_audits;
+                    });
+                    column.push([audit.name, total_audit_1, total_audit_1]);
+                }
+            });
+        });
+        this.verifyReportDataExists(reportType, [{ "id": 1, "name": "Todas Filiais", "columns": column }], OPTIONS);
+    };
+    ReportTreatComponent.prototype.createTopDrivers = function (data) {
+        var top = [
+            {
+                "month": "2019-02-01 00:00:00.0",
+                "drivers": [
+                    { "driver_name": "Rafael", "total_audits": 15 },
+                    { "driver_name": "Marcos", "total_audits": 11 },
+                    { "driver_name": "Abimael", "total_audits": 31 }
+                ],
+            },
+            {
+                "month": "2019-03-01 00:00:00.0",
+                "drivers": [
+                    { "driver_name": "Rafael", "total_audits": 69 },
+                    { "driver_name": "Marcos", "total_audits": 21 },
+                    { "driver_name": "Abimael", "total_audits": 90 }
+                ],
+            }
+        ];
+        if (data.length > 0 && data[0].drivers && data[0].drivers.length > 0) {
+            top = data;
+        }
+        top.forEach(function (month) {
+            month.month = moment__WEBPACK_IMPORTED_MODULE_3__(month.month).format('MMMM / YY');
+            month.drivers = month.drivers.sort(function (n1, n2) { return (n1.total_audits > n2.total_audits ? -1 : 1); });
+        });
+        this.top_drivers = top;
+    };
+    ReportTreatComponent.prototype.getOptions = function () {
+        return {
+            backgroundColor: { fill: 'transparent' },
+            chartArea: {
+                left: 5,
+                top: 10,
+                width: '95%',
+                height: '85%',
+                backgroundColor: {
+                    strokeWidth: 0,
+                    fill: 'transparent'
+                }
+            },
+            legend: { position: "none" },
+            vAxis: {
+                textPosition: 'none',
+                gridlines: {
+                    color: 'transparent'
+                }
+            },
+            hAxis: {
+                gridlines: {
+                    color: 'transparent'
+                }
+            },
+            annotations: {
+                alwaysOutside: true,
+                textStyle: {
+                    fontSize: 14,
+                    color: '#000',
+                    auraColor: 'none'
+                }
+            },
+            tooltip: { trigger: 'none' },
+            colors: ['#4472C4'],
+            bar: { groupWidth: "20%" },
+            baselineColor: '#CCC',
+            trendlines: {
+                0: {
+                    type: 'linear',
+                    showR2: false,
+                    visibleInLegend: false
+                }
+            }
+        };
+    };
+    ReportTreatComponent.prototype.verifyReportDataExists = function (reportType, data, options) {
+        var finded = this.data_chart.find(function (data) { return data.report_type == reportType; });
+        if (!finded) {
+            this.data_chart.push({ "report_type": reportType, data: data, options: options });
+        }
+        else {
+            finded.data.push(data);
+        }
+    };
+    ReportTreatComponent.prototype.getData = function (reportType, itemId) {
+        var finded = this.data_chart.find(function (data) { return data.report_type == reportType; });
+        if (finded) {
+            return (itemId) ? finded.data.find(function (data) { return data.id == itemId; }).columns : finded.data;
+        }
+        else {
+            console.log("O sistema não conseguiu encontrar o gráfico " + reportType);
+        }
+    };
+    ReportTreatComponent.prototype.getOption = function (reportType, color) {
+        var finded = this.data_chart.find(function (data) { return data.report_type == reportType; });
+        if (finded) {
+            return finded.options;
+        }
+        else {
+            console.log("O sistema não conseguiu encontrar o gráfico " + reportType);
+        }
+    };
+    ReportTreatComponent.prototype.exportPDF = function () {
+        var _this = this;
+        this.loadingPdf = true;
+        var images = [];
+        images.push(document.getElementById('report-treat-1'));
+        this.reportService.saveReport(images, "Tratativas", this.reportService.startDate, this.reportService.endDate).then(function (result) {
+            _this.loadingPdf = false;
+        }).catch(function (erro) { return _this.loadingPdf = false; });
+    };
+    ReportTreatComponent = __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Component"])({
+            selector: 'report-treat',
+            template: __webpack_require__(/*! ./report-treat.component.html */ "./src/app/pages/reports/report-treat/report-treat.component.html"),
+            styles: [__webpack_require__(/*! ./report-treat.component.scss */ "./src/app/pages/reports/report-treat/report-treat.component.scss")]
+        }),
+        __metadata("design:paramtypes", [app_core_data_report_service__WEBPACK_IMPORTED_MODULE_1__["ReportService"],
+            _angular_router__WEBPACK_IMPORTED_MODULE_2__["Router"]])
+    ], ReportTreatComponent);
+    return ReportTreatComponent;
+}());
+
+
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/report-trend/report-trend.component.html":
+/*!************************************************************************!*\
+  !*** ./src/app/pages/reports/report-trend/report-trend.component.html ***!
+  \************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = "<nb-card *ngIf=\"loadedChart; else loading\">\n<div style=\"padding: 1.5em; padding-top: 1.5em;\" #trendReport>\n  <div class=\"row\" style=\"margin-bottom: 45px\">\n    <div class=\"col-md-12 report-content\">\n      <div class=\"report-header\">\n        <h1>Tendência dos Alertas</h1>\n        <h2>Alertas x Equipamentos</h2>\n      </div>\n      <div id=\"reportTrendChart_2\" [chartType]=\"googleChartType\" [chartOptions]=\"getOption('alertAndDevices')\" \n        [chartData]=\"getData('alertAndDevices', '1')\" GoogleChart>\n      </div>\n    </div>\n  </div>\n  <div class=\"row\">\n    <div class=\"col-md-12 report-content\">\n      <div class=\"report-header\">\n          <h1>Tendência dos Alertas</h1>\n          <h2>Média de Alertas x Veículo x Mês</h2>\n      </div>\n      <div id=\"reportTrendChart\" [chartType]=\"googleChartType\" [chartOptions]=\"getOption('resumeAll')\" \n        [chartData]=\"getData('resumeAll', '1')\" GoogleChart>\n      </div>\n    </div>\n  </div>\n  <div class=\"row\">\n    <div class=\"col-md-12 report-content\">\n        <div class=\"report-header\" style=\"text-align: center; margin-top: 3em;\">\n            <h1>Tendência dos Alertas por Filial</h1>\n            <h2>Média de Alertas x Veículo x Mês</h2>\n        </div>\n        <div class=\"row\" style=\"justify-content: center;\">\n          <div *ngFor=\"let data of getData('perCustomer'); let i = index\" style=\"margin: 2em; position: relative; text-align: center\">            \n            <div GoogleChart id=\"perCustomer-{{data['id']}}\" [chartType]=\"googleChartType\" [chartOptions]=\"getOption('perCustomer')\" \n              [chartData]=\"data['columns']\" *ngIf=\"loadedChart\" style=\"width: 300px\">\n            </div>\n            <h3>{{data['name']}}</h3>\n          </div>\n        </div>\n    </div>\n  </div>\n</div>\n\n<div class=\"row\">\n  <div class=\"col-md-5 offset-md-7\">\n    <export-buttons (clickedPDF)=\"exportPDF()\" [loadingPdf]=\"loadingPdf\"></export-buttons>\n  </div>\n</div>\n</nb-card>\n\n<ng-template #loading>\n    <div class=\"col-md-12\" style=\"display: flex; justify-content: center; align-items: center;\">      \n      <svg *ngIf=\"!errMessage\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"150px\" height=\"176px\" viewBox=\"0 -10 60 67\" version=\"1.1\">\n        <defs>\n        <clipPath id=\"barMask1\">\n            <rect x=\"10.2\" y=\"13.2\" width=\"24.6\" height=\"6\"/>\n        </clipPath>\n        <clipPath id=\"barMask2\">\n            <rect x=\"10.2\" y=\"25.2\" width=\"24.6\" height=\"6\"/>\n        </clipPath>\n        <clipPath id=\"barMask3\">\n            <rect x=\"22.2\" y=\"37.2\" width=\"12.6\" height=\"6\"/>\n        </clipPath>\n        <filter x=\"-50%\" y=\"-50%\" width=\"200%\" height=\"200%\" filterUnits=\"objectBoundingBox\" id=\"filter-1\">\n            <feOffset dx=\"0\" dy=\"2\" in=\"SourceAlpha\" result=\"shadowOffsetOuter1\"></feOffset>\n            <feGaussianBlur stdDeviation=\"2\" in=\"shadowOffsetOuter1\" result=\"shadowBlurOuter1\"></feGaussianBlur>\n            <feColorMatrix values=\"0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.105451766 0\" in=\"shadowBlurOuter1\" type=\"matrix\" result=\"shadowMatrixOuter1\"></feColorMatrix>\n            <feMerge>\n                <feMergeNode in=\"shadowMatrixOuter1\"></feMergeNode>\n                <feMergeNode in=\"SourceGraphic\"></feMergeNode>\n            </feMerge>\n        </filter>\n        </defs>\n    \n        <g fill=\"#fff\" fill-opacity=\"1\">\n        <path d=\"M0.0661196319 42.8 L1.30748466 44 L12.8519172 55.7 L14.0912117 56.9 L44.8634816 56.9 L44.8634816 0 L0.0661196319 0 L0.0661196319 42.8 Z M18.9212577 52.6 C13.8069939 52.6 16.3 40.4 16.3 40.4 C16.2717791 40.4 4.4 43.3 4.3 37.9 L4.29819018 4.3 L40.6315491 4.3 L40.6315491 52.6 L18.9212577 52.6 Z\" />\n        </g>\n        <g id=\"loadingLines\">\n        <g fill=\"#fff\" fill-opacity=\"0.7\">\n            <rect x=\"10.2\" y=\"13.2\" width=\"24.6\" height=\"6\"/>\n            <rect x=\"10.2\" y=\"25.2\" width=\"24.6\" height=\"6\"/>\n            <rect x=\"22.2\" y=\"37.2\" width=\"12.6\" height=\"6\"/>\n        </g>\n        <g fill=\"#1A81D5\">\n            <rect id=\"rect1\" x=\"-86\" y=\"13.2\" width=\"70\" height=\"6\" clip-path=\"url(#barMask1)\">\n            <animate attributeName=\"x\" from=\"-60\" to=\"80\" dur=\"3s\" begin=\"0s\" repeatCount=\"indefinite\"/>\n            </rect>\n            <rect id=\"rect2\" x=\"-112\" y=\"25.2\" width=\"70\" height=\"6\" clip-path=\"url(#barMask2)\">\n            <animate attributeName=\"x\" from=\"-60\" to=\"80\" dur=\"3s\" begin=\"0.6s\" repeatCount=\"indefinite\"/>\n            </rect>\n            <rect id=\"rect3\" x=\"-130\" y=\"37.2\" width=\"70\" height=\"6\" clip-path=\"url(#barMask3)\">\n            <animate attributeName=\"x\" from=\"-60\" to=\"80\" dur=\"3s\" begin=\"0.9s\" repeatCount=\"indefinite\"/>\n            </rect>\n        </g>\n        </g>\n      </svg>\n\n      {{errMessage}}\n    </div>\n  </ng-template>\n"
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/report-trend/report-trend.component.scss":
+/*!************************************************************************!*\
+  !*** ./src/app/pages/reports/report-trend/report-trend.component.scss ***!
+  \************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = ".report-content{display:flex;flex-direction:column}.report-header{font-family:Arial;text-transform:uppercase;margin-bottom:1em}.report-header h1{font-size:1.7em;font-weight:bold;color:#4472C4}.report-header h2{font-size:1em;color:#999;margin-left:0.5em}.report-content h3{font-size:0.75em;color:#999;font-weight:bold;width:100%;margin-left:0.5em;position:absolute;left:5%}\n"
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/report-trend/report-trend.component.ts":
+/*!**********************************************************************!*\
+  !*** ./src/app/pages/reports/report-trend/report-trend.component.ts ***!
+  \**********************************************************************/
+/*! exports provided: ReportTrendComponent */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ReportTrendComponent", function() { return ReportTrendComponent; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
+/* harmony import */ var app_core_data_report_service__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! app/@core/data/report.service */ "./src/app/@core/data/report.service.ts");
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! moment */ "./node_modules/moment/moment.js");
+/* harmony import */ var moment__WEBPACK_IMPORTED_MODULE_3___default = /*#__PURE__*/__webpack_require__.n(moment__WEBPACK_IMPORTED_MODULE_3__);
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (undefined && undefined.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __generator = (undefined && undefined.__generator) || function (thisArg, body) {
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    function verb(n) { return function (v) { return step([n, v]); }; }
+    function step(op) {
+        if (f) throw new TypeError("Generator is already executing.");
+        while (_) try {
+            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [0, t.value];
+            switch (op[0]) {
+                case 0: case 1: t = op; break;
+                case 4: _.label++; return { value: op[1], done: false };
+                case 5: _.label++; y = op[1]; op = [0]; continue;
+                case 7: op = _.ops.pop(); _.trys.pop(); continue;
+                default:
+                    if (!(t = _.trys, t = t.length > 0 && t[t.length - 1]) && (op[0] === 6 || op[0] === 2)) { _ = 0; continue; }
+                    if (op[0] === 3 && (!t || (op[1] > t[0] && op[1] < t[3]))) { _.label = op[1]; break; }
+                    if (op[0] === 6 && _.label < t[1]) { _.label = t[1]; t = op; break; }
+                    if (t && _.label < t[2]) { _.label = t[2]; _.ops.push(op); break; }
+                    if (t[2]) _.ops.pop();
+                    _.trys.pop(); continue;
+            }
+            op = body.call(thisArg, _);
+        } catch (e) { op = [6, e]; y = 0; } finally { f = t = 0; }
+        if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
+    }
+};
+
+
+
+
+var ReportTrendComponent = /** @class */ (function () {
+    function ReportTrendComponent(reportService, router) {
+        this.reportService = reportService;
+        this.router = router;
+        this.loadingPdf = false;
+        this.errMessage = '';
+        this.googleChartType = 'ColumnChart';
+        this.loadedChart = false;
+        this.data_chart = [];
+        this.colors_chart = ['#ED7D31', '#92D050', '#5B9BD5'];
+    }
+    ReportTrendComponent.prototype.ngOnInit = function () {
+        this.loadData();
+    };
+    ReportTrendComponent.prototype.loadData = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            var CUSTOMER_CHILD, START_DATE, END_DATE, ALERT_TYPE;
+            return __generator(this, function (_a) {
+                CUSTOMER_CHILD = this.reportService.customersChild;
+                START_DATE = this.reportService.startDate;
+                END_DATE = this.reportService.endDate;
+                ALERT_TYPE = this.reportService.alertTypes;
+                if (CUSTOMER_CHILD.length < 1 || ALERT_TYPE.length < 1) {
+                    this.router.navigate(['/pages/reports']);
+                }
+                else {
+                    /* const data: ReportMonths[] = await this.reportService.fetchTrendReport(CUSTOMER_CHILD, START_DATE.toISOString(), END_DATE.toISOString(), ALERT_TYPE);
+                    this.data = data;
+                    
+                    this.creatingReports(['resumeAll', 'alertAndDevices', 'perCustomer']); */
+                    this.reportService.fetchTrendReport(CUSTOMER_CHILD, START_DATE.toISOString(), END_DATE.toISOString(), ALERT_TYPE).then(function (result) {
+                        if (result.length < 1)
+                            throw Error('dados insuficientes');
+                        var data = result;
+                        _this.data = data;
+                        _this.creatingReports(['resumeAll', 'alertAndDevices', 'perCustomer']);
+                        _this.loadedChart = true;
+                    }).catch(function (err) {
+                        _this.errMessage = "Não há dados suficientes para gerar o relatório.";
+                    });
+                }
+                return [2 /*return*/];
+            });
+        });
+    };
+    ReportTrendComponent.prototype.creatingReports = function (reports) {
+        var _this = this;
+        this.reportService.setMomentLocale();
+        var data_reports = this.data.sort(function (n1, n2) { return new Date(n1.month).getTime() - new Date(n2.month).getTime(); });
+        var HEADER_1 = ['Month', 'Alertas', { role: 'annotation' }];
+        var HEADER_2 = ['Month', 'Alertas', 'Equipamentos', { role: 'annotation' }];
+        var TICKS = this.reportService.createTicks(data_reports);
+        reports.forEach(function (report) {
+            switch (report) {
+                case 'resumeAll':
+                    _this.constructResumeData(data_reports, HEADER_1, 'resumeAll', TICKS);
+                    break;
+                case 'alertAndDevices':
+                    _this.createAlertsAndDevices(data_reports, HEADER_2, 'alertAndDevices');
+                    break;
+                case 'perCustomer':
+                    _this.createPerCustomer(data_reports, HEADER_1, 'perCustomer', TICKS);
+                    break;
+            }
+        });
+    };
+    ReportTrendComponent.prototype.createPerCustomer = function (data_reports, header, reportType, ticks) {
+        var _this = this;
+        var OPTIONS = this.getOptions('#ED7D31', false, ticks);
+        var data = [];
+        data_reports.forEach(function (_month) {
+            _month.customers_child.forEach(function (customers) {
+                var media = _this.calcMedia(customers.total_alerts, customers.total_devices);
+                var column = [{ v: new Date(_month.month), f: moment__WEBPACK_IMPORTED_MODULE_3__(_month.month).format('MMMM / YY') }, media, media];
+                var findedCustomerData = data.find(function (d) { return d.id == customers.id; });
+                if (findedCustomerData) {
+                    findedCustomerData.columns.push(column);
+                }
+                else {
+                    data.push({ "id": customers.id, "name": customers.name, "columns": [header, column] });
+                }
+            });
+        });
+        this.verifyReportDataExists(reportType, data, OPTIONS);
+    };
+    ReportTrendComponent.prototype.createAlertsAndDevices = function (data_reports, header, reportType) {
+        var OPTIONS = this.getOptions('#EC3439', true);
+        var columns = [header];
+        data_reports.forEach(function (_month) {
+            var total_alertas = 0;
+            var total_devices = 0;
+            _month.customers_child.forEach(function (customers) {
+                total_alertas = total_alertas + customers.total_alerts;
+                total_devices = total_devices + customers.total_devices;
+            });
+            columns.push([moment__WEBPACK_IMPORTED_MODULE_3__(_month.month).format('MMMM / YY'), total_alertas, total_devices, total_devices]);
+        });
+        var data = [{ "id": 1, "name": "Todas Filiais", "columns": columns }];
+        this.verifyReportDataExists(reportType, data, OPTIONS);
+    };
+    ReportTrendComponent.prototype.constructResumeData = function (data_reports, header, reportType, ticks) {
+        var _this = this;
+        var OPTIONS = this.getOptions('#4472C4', false, ticks);
+        var columns = [header];
+        data_reports.forEach(function (_month) {
+            var total_alertas = 0;
+            var total_devices = 0;
+            _month.customers_child.forEach(function (customers) {
+                total_alertas = total_alertas + customers.total_alerts;
+                total_devices = total_devices + customers.total_devices;
+            });
+            var media = _this.calcMedia(total_alertas, total_devices);
+            columns.push([{ v: new Date(_month.month), f: moment__WEBPACK_IMPORTED_MODULE_3__(_month.month).format('MMMM / YY') }, media, media,]);
+        });
+        var data = [{ "id": 1, "name": "Todas Filiais", "columns": columns }];
+        this.verifyReportDataExists(reportType, data, OPTIONS);
+    };
+    ReportTrendComponent.prototype.getOptions = function (colorBars, dualY, _ticks) {
+        if (dualY) {
+            return {
+                backgroundColor: { fill: 'transparent' },
+                seriesType: 'bars',
+                annotations: {
+                    alwaysOutside: true,
+                    textStyle: {
+                        fontSize: 16,
+                        color: '#000',
+                        auraColor: 'none'
+                    }
+                },
+                series: {
+                    1: {
+                        type: 'line',
+                        targetAxisIndex: 1,
+                    }
+                },
+                vAxis: {
+                    viewWindowMode: 'explicit',
+                    viewWindow: {
+                        min: 0
+                    }
+                },
+                colors: [colorBars, '#4472C4'],
+                lineWidth: 3,
+                bar: { groupWidth: "20%" },
+                baselineColor: '#CCC',
+                chartArea: {
+                    left: 45,
+                    top: 35,
+                    width: '85%',
+                    height: '80%',
+                    backgroundColor: '#FFFFFF'
+                },
+                height: '400',
+            };
+        }
+        else {
+            return {
+                height: '300',
+                chartArea: {
+                    width: '95%',
+                    height: '70%',
+                    top: '0',
+                    left: '0',
+                    right: '0',
+                    bottom: '30',
+                    backgroundColor: {
+                        strokeWidth: 0,
+                        fill: 'transparent'
+                    }
+                },
+                legend: { position: "none" },
+                vAxis: {
+                    textPosition: 'none',
+                    gridlines: {
+                        color: 'transparent'
+                    },
+                    viewWindowMode: 'explicit',
+                    viewWindow: {
+                        min: 0
+                    }
+                },
+                hAxis: {
+                    ticks: _ticks,
+                    gridlines: {
+                        color: 'transparent'
+                    }
+                },
+                annotations: {
+                    alwaysOutside: true,
+                    textStyle: {
+                        fontSize: 14,
+                        color: '#000',
+                        auraColor: 'none'
+                    }
+                },
+                tooltip: { trigger: 'none' },
+                colors: [colorBars, '#4472C4'],
+                bar: { groupWidth: "20%" },
+                baselineColor: '#CCC',
+                backgroundColor: {
+                    fill: 'transparent',
+                },
+                series: {
+                    0: {
+                        lineDashStyle: [4, 1]
+                    }
+                },
+                trendlines: {
+                    0: {
+                        type: 'linear',
+                        showR2: false,
+                        visibleInLegend: false,
+                        color: '#4472C4'
+                    }
+                }
+            };
+        }
+    };
+    ReportTrendComponent.prototype.calcMedia = function (n1, n2) {
+        return Number((n1 / n2).toFixed(1));
+    };
+    ReportTrendComponent.prototype.verifyReportDataExists = function (reportType, data, options) {
+        var finded = this.data_chart.find(function (data) { return data.report_type == reportType; });
+        if (!finded) {
+            this.data_chart.push({ "report_type": reportType, data: data, options: options });
+        }
+        else {
+            finded.data.push(data);
+        }
+    };
+    ReportTrendComponent.prototype.getData = function (reportType, itemId) {
+        var finded = this.data_chart.find(function (data) { return data.report_type == reportType; });
+        if (finded) {
+            return (itemId) ? finded.data.find(function (data) { return data.id == itemId; }).columns : finded.data;
+        }
+        else {
+            console.log("O sistema não conseguiu encontrar o gráfico " + reportType);
+        }
+    };
+    ReportTrendComponent.prototype.getOption = function (reportType, color) {
+        var finded = this.data_chart.find(function (data) { return data.report_type == reportType; });
+        if (finded) {
+            return finded.options;
+        }
+        else {
+            console.log("O sistema não conseguiu encontrar o gráfico " + reportType);
+        }
+    };
+    ReportTrendComponent.prototype.exportPDF = function () {
+        var _this = this;
+        this.loadingPdf = true;
+        var images = [];
+        //images.push(document.getElementById('report-trend-1'));    
+        this.reportService.saveReport([this.trendReport.nativeElement], "Tendência dos Alertas", this.reportService.startDate, this.reportService.endDate).then(function (result) {
+            _this.loadingPdf = false;
+        }).catch(function (erro) { return _this.loadingPdf = false; });
+    };
+    __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["ViewChild"])('trendReport'),
+        __metadata("design:type", Object)
+    ], ReportTrendComponent.prototype, "trendReport", void 0);
+    ReportTrendComponent = __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Component"])({
+            selector: 'report-trend',
+            template: __webpack_require__(/*! ./report-trend.component.html */ "./src/app/pages/reports/report-trend/report-trend.component.html"),
+            styles: [__webpack_require__(/*! ./report-trend.component.scss */ "./src/app/pages/reports/report-trend/report-trend.component.scss")]
+        }),
+        __metadata("design:paramtypes", [app_core_data_report_service__WEBPACK_IMPORTED_MODULE_1__["ReportService"],
+            _angular_router__WEBPACK_IMPORTED_MODULE_2__["Router"]])
+    ], ReportTrendComponent);
+    return ReportTrendComponent;
+}());
+
+
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/reports-routing.module.ts":
+/*!*********************************************************!*\
+  !*** ./src/app/pages/reports/reports-routing.module.ts ***!
+  \*********************************************************/
+/*! exports provided: ReportsRoutingModule */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ReportsRoutingModule", function() { return ReportsRoutingModule; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
+/* harmony import */ var _reports_component__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./reports.component */ "./src/app/pages/reports/reports.component.ts");
+/* harmony import */ var _report_trend_report_trend_component__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./report-trend/report-trend.component */ "./src/app/pages/reports/report-trend/report-trend.component.ts");
+/* harmony import */ var _report_days_or_hours_report_days_or_hours_component__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./report-days-or-hours/report-days-or-hours.component */ "./src/app/pages/reports/report-days-or-hours/report-days-or-hours.component.ts");
+/* harmony import */ var _report_resume_report_resume_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./report-resume/report-resume.component */ "./src/app/pages/reports/report-resume/report-resume.component.ts");
+/* harmony import */ var _report_treat_report_treat_component__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./report-treat/report-treat.component */ "./src/app/pages/reports/report-treat/report-treat.component.ts");
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+
+
+
+
+
+
+
+var routes = [{
+        path: '',
+        component: _reports_component__WEBPACK_IMPORTED_MODULE_2__["ReportsComponent"],
+        children: [
+            {
+                path: 'trend-report',
+                component: _report_trend_report_trend_component__WEBPACK_IMPORTED_MODULE_3__["ReportTrendComponent"]
+            },
+            {
+                path: 'days-our-hours-report',
+                component: _report_days_or_hours_report_days_or_hours_component__WEBPACK_IMPORTED_MODULE_4__["ReportDaysOrHoursComponent"]
+            },
+            {
+                path: 'resume-report',
+                component: _report_resume_report_resume_component__WEBPACK_IMPORTED_MODULE_5__["ReportResumeComponent"]
+            },
+            {
+                path: 'treat-report',
+                component: _report_treat_report_treat_component__WEBPACK_IMPORTED_MODULE_6__["ReportTreatComponent"]
+            }
+        ],
+    }];
+var ReportsRoutingModule = /** @class */ (function () {
+    function ReportsRoutingModule() {
+    }
+    ReportsRoutingModule = __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["NgModule"])({
+            imports: [_angular_router__WEBPACK_IMPORTED_MODULE_1__["RouterModule"].forChild(routes)],
+            exports: [_angular_router__WEBPACK_IMPORTED_MODULE_1__["RouterModule"]],
+        })
+    ], ReportsRoutingModule);
+    return ReportsRoutingModule;
+}());
+
+
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/reports.component.scss":
+/*!******************************************************!*\
+  !*** ./src/app/pages/reports/reports.component.scss ***!
+  \******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+module.exports = ".report-content{display:flex;flex-direction:column}.report-header{font-family:Arial;text-transform:uppercase;margin-bottom:1em}.report-header h1{font-size:1.7em;font-weight:bold;color:#4472C4}.report-header h2{font-size:1em;color:#999;margin-left:0.5em}.report-content h3{font-size:0.75em;color:#999;font-weight:bold;width:100%;margin-left:0.5em;position:absolute;left:5%}\n"
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/reports.component.ts":
+/*!****************************************************!*\
+  !*** ./src/app/pages/reports/reports.component.ts ***!
+  \****************************************************/
+/*! exports provided: ReportsComponent */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ReportsComponent", function() { return ReportsComponent; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/router */ "./node_modules/@angular/router/fesm5/router.js");
+/* harmony import */ var app_core_data_report_service__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! app/@core/data/report.service */ "./src/app/@core/data/report.service.ts");
+/* harmony import */ var app_core_enum_report_types_enum__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! app/@core/enum/report-types.enum */ "./src/app/@core/enum/report-types.enum.ts");
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (undefined && undefined.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+
+
+
+
+var ReportsComponent = /** @class */ (function () {
+    function ReportsComponent(router, reportService) {
+        this.router = router;
+        this.reportService = reportService;
+        this.showReport = true;
+    }
+    ReportsComponent.prototype.changedfilters = function () {
+        this.showReport = false;
+    };
+    ReportsComponent.prototype.openReport = function () {
+        var _this = this;
+        this.showReport = false;
+        var REPORT_TYPE = this.reportService.reportType;
+        switch (REPORT_TYPE) {
+            case app_core_enum_report_types_enum__WEBPACK_IMPORTED_MODULE_3__["ReportTypes"]["Consolidado de Alertas"]:
+                this.router.navigate(['/pages/reports/days-our-hours-report']);
+                break;
+            case app_core_enum_report_types_enum__WEBPACK_IMPORTED_MODULE_3__["ReportTypes"]["Resumo de Alertas"]:
+                this.router.navigate(['/pages/reports/resume-report']);
+                break;
+            case app_core_enum_report_types_enum__WEBPACK_IMPORTED_MODULE_3__["ReportTypes"]["Tendência de Alertas"]:
+                this.router.navigate(['/pages/reports/trend-report']);
+                break;
+            case app_core_enum_report_types_enum__WEBPACK_IMPORTED_MODULE_3__["ReportTypes"].Tratativas:
+                this.router.navigate(['/pages/reports/treat-report']);
+                break;
+        }
+        setTimeout(function () { _this.showReport = true; }, 500);
+    };
+    ReportsComponent = __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["Component"])({
+            selector: 'ngx-reports',
+            styles: [__webpack_require__(/*! ./reports.component.scss */ "./src/app/pages/reports/reports.component.scss")],
+            template: "\n    <div class=\"row\">\n      <div class=\"col-md-3\">\n        <report-filter (submited)=\"openReport()\" (changed)=\"changedfilters()\"></report-filter>\n      </div>\n      <div class=\"col-md-9\" style=\"margin-bottom: 3em;\" *ngIf=\"showReport\">        \n        <router-outlet></router-outlet>        \n      </div>      \n    </div>    \n  ",
+        }),
+        __metadata("design:paramtypes", [_angular_router__WEBPACK_IMPORTED_MODULE_1__["Router"],
+            app_core_data_report_service__WEBPACK_IMPORTED_MODULE_2__["ReportService"]])
+    ], ReportsComponent);
+    return ReportsComponent;
+}());
+
+
+
+/***/ }),
+
+/***/ "./src/app/pages/reports/reports.module.ts":
+/*!*************************************************!*\
+  !*** ./src/app/pages/reports/reports.module.ts ***!
+  \*************************************************/
+/*! exports provided: ReportsModule */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+__webpack_require__.r(__webpack_exports__);
+/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "ReportsModule", function() { return ReportsModule; });
+/* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ "./node_modules/@angular/core/fesm5/core.js");
+/* harmony import */ var _reports_routing_module__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./reports-routing.module */ "./src/app/pages/reports/reports-routing.module.ts");
+/* harmony import */ var _reports_component__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./reports.component */ "./src/app/pages/reports/reports.component.ts");
+/* harmony import */ var _report_trend_report_trend_component__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./report-trend/report-trend.component */ "./src/app/pages/reports/report-trend/report-trend.component.ts");
+/* harmony import */ var _report_days_or_hours_report_days_or_hours_component__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./report-days-or-hours/report-days-or-hours.component */ "./src/app/pages/reports/report-days-or-hours/report-days-or-hours.component.ts");
+/* harmony import */ var _component_report_filter_report_filter_component__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./component/report-filter/report-filter.component */ "./src/app/pages/reports/component/report-filter/report-filter.component.ts");
+/* harmony import */ var app_theme_theme_module__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! app/@theme/theme.module */ "./src/app/@theme/theme.module.ts");
+/* harmony import */ var primeng_calendar__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! primeng/calendar */ "./node_modules/primeng/calendar.js");
+/* harmony import */ var primeng_calendar__WEBPACK_IMPORTED_MODULE_7___default = /*#__PURE__*/__webpack_require__.n(primeng_calendar__WEBPACK_IMPORTED_MODULE_7__);
+/* harmony import */ var primeng_multiselect__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! primeng/multiselect */ "./node_modules/primeng/multiselect.js");
+/* harmony import */ var primeng_multiselect__WEBPACK_IMPORTED_MODULE_8___default = /*#__PURE__*/__webpack_require__.n(primeng_multiselect__WEBPACK_IMPORTED_MODULE_8__);
+/* harmony import */ var primeng_dropdown__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! primeng/dropdown */ "./node_modules/primeng/dropdown.js");
+/* harmony import */ var primeng_dropdown__WEBPACK_IMPORTED_MODULE_9___default = /*#__PURE__*/__webpack_require__.n(primeng_dropdown__WEBPACK_IMPORTED_MODULE_9__);
+/* harmony import */ var app_core_data_report_service__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! app/@core/data/report.service */ "./src/app/@core/data/report.service.ts");
+/* harmony import */ var _report_treat_report_treat_component__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./report-treat/report-treat.component */ "./src/app/pages/reports/report-treat/report-treat.component.ts");
+/* harmony import */ var _report_resume_report_resume_component__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./report-resume/report-resume.component */ "./src/app/pages/reports/report-resume/report-resume.component.ts");
+/* harmony import */ var app_theme_directives_googleChart_module__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! app/@theme/directives/googleChart.module */ "./src/app/@theme/directives/googleChart.module.ts");
+/* harmony import */ var app_core_data_export_files_service__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! app/@core/data/export-files.service */ "./src/app/@core/data/export-files.service.ts");
+/* harmony import */ var _components_export_buttons_export_buttons_component__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! ../components/export-buttons/export-buttons.component */ "./src/app/pages/components/export-buttons/export-buttons.component.ts");
+var __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+var ReportsModule = /** @class */ (function () {
+    function ReportsModule() {
+    }
+    ReportsModule = __decorate([
+        Object(_angular_core__WEBPACK_IMPORTED_MODULE_0__["NgModule"])({
+            imports: [
+                _reports_routing_module__WEBPACK_IMPORTED_MODULE_1__["ReportsRoutingModule"],
+                app_theme_theme_module__WEBPACK_IMPORTED_MODULE_6__["ThemeModule"],
+                primeng_calendar__WEBPACK_IMPORTED_MODULE_7__["CalendarModule"],
+                primeng_multiselect__WEBPACK_IMPORTED_MODULE_8__["MultiSelectModule"],
+                primeng_dropdown__WEBPACK_IMPORTED_MODULE_9__["DropdownModule"],
+                app_theme_directives_googleChart_module__WEBPACK_IMPORTED_MODULE_13__["GoogleChartModule"]
+            ],
+            declarations: [
+                _reports_component__WEBPACK_IMPORTED_MODULE_2__["ReportsComponent"],
+                _report_trend_report_trend_component__WEBPACK_IMPORTED_MODULE_3__["ReportTrendComponent"],
+                _report_days_or_hours_report_days_or_hours_component__WEBPACK_IMPORTED_MODULE_4__["ReportDaysOrHoursComponent"],
+                _component_report_filter_report_filter_component__WEBPACK_IMPORTED_MODULE_5__["ReportFilterComponent"],
+                _report_treat_report_treat_component__WEBPACK_IMPORTED_MODULE_11__["ReportTreatComponent"],
+                _report_resume_report_resume_component__WEBPACK_IMPORTED_MODULE_12__["ReportResumeComponent"],
+                _components_export_buttons_export_buttons_component__WEBPACK_IMPORTED_MODULE_15__["ExportButtonsComponent"]
+            ],
+            providers: [
+                app_core_data_report_service__WEBPACK_IMPORTED_MODULE_10__["ReportService"],
+                app_core_data_export_files_service__WEBPACK_IMPORTED_MODULE_14__["ExportFilesService"]
+            ]
+        })
+    ], ReportsModule);
+    return ReportsModule;
+}());
+
+
+
+/***/ })
+
+}]);
+//# sourceMappingURL=app-pages-pages-module~reports-reports-module.js.map
