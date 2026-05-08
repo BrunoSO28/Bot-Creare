@@ -1,15 +1,20 @@
-2026/05/07-17:05:57.767 70c8 Reusing MANIFEST C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2026/05/07-17:05:57.768 70c8 Recovering log #29
-2026/05/07-17:05:57.769 70c8 Reusing old log C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000029.log 
-2026/05/07-17:05:57.805 186c Level-0 table #33: started
-2026/05/07-17:05:57.812 186c Level-0 table #33: 682248 bytes OK
-2026/05/07-17:05:57.814 186c Delete type=0 #29
-2026/05/07-17:05:57.814 186c Compacting 4@0 + 1@1 files
-2026/05/07-17:05:57.820 186c Generated table #34@0: 3 keys, 682248 bytes
-2026/05/07-17:05:57.820 186c Compacted 4@0 + 1@1 files => 682248 bytes
-2026/05/07-17:05:57.821 186c compacted to: files[ 0 1 1 0 0 0 0 ]
-2026/05/07-17:05:57.821 186c Delete type=2 #21
-2026/05/07-17:05:57.821 186c Delete type=2 #24
-2026/05/07-17:05:57.822 186c Delete type=2 #27
-2026/05/07-17:05:57.822 186c Delete type=2 #30
-2026/05/07-17:05:57.822 186c Delete type=2 #33
+2026/05/07-21:14:54.168 1cdc Reusing MANIFEST C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/05/07-21:14:54.168 1cdc Recovering log #151
+2026/05/07-21:14:54.170 1cdc Level-0 table #154: started
+2026/05/07-21:14:54.176 1cdc Level-0 table #154: 682248 bytes OK
+2026/05/07-21:14:54.177 1cdc Recovering log #154
+2026/05/07-21:14:54.178 1cdc Reusing old log C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000154.log 
+2026/05/07-21:14:54.179 1cdc Delete type=0 #151
+2026/05/07-21:14:54.179 1cdc Delete type=2 #155
+2026/05/07-21:14:54.250 6e5c Level-0 table #156: started
+2026/05/07-21:14:54.254 6e5c Level-0 table #156: 682248 bytes OK
+2026/05/07-21:14:54.255 6e5c Delete type=0 #154
+2026/05/07-21:14:54.256 6e5c Compacting 4@0 + 1@1 files
+2026/05/07-21:14:54.260 6e5c Generated table #157@0: 3 keys, 682248 bytes
+2026/05/07-21:14:54.260 6e5c Compacted 4@0 + 1@1 files => 682248 bytes
+2026/05/07-21:14:54.261 6e5c compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/05/07-21:14:54.261 6e5c Delete type=2 #147
+2026/05/07-21:14:54.261 6e5c Delete type=2 #149
+2026/05/07-21:14:54.261 6e5c Delete type=2 #152
+2026/05/07-21:14:54.261 6e5c Delete type=2 #154
+2026/05/07-21:14:54.261 6e5c Delete type=2 #156

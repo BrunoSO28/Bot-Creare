@@ -12,7 +12,6 @@ import os
 class PlayWrightBot(QThread):
     sinalInfo = Signal(str,str,str,str,str)
     sinalDownload = Signal(str)
-    sinalGestao = Signal(str)
     sinalTratativas = Signal(list)
     sinalPronto = Signal()
 
@@ -92,8 +91,8 @@ class PlayWrightBot(QThread):
             await self.pagina.get_by_role("button", name="Entrar").click()
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").click()
             await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-header/div/div[2]/div/div[3]/p-checkbox/div/div[2]/span").click()
-            #await self.pagina.pause()
             tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button/img')
+            #await self.pagina.pause()
 
             #Coletar informações do Alerta
             while await tratativa.is_enabled():
@@ -146,20 +145,6 @@ class PlayWrightBot(QThread):
         asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self.run_playwright())
 
-    '''def clickNavegador(self, locator: str):
-        if self.loop:
-           asyncio.run_coroutine_threadsafe(self.acaoClick(locator), self.loop)
-
-    async def acaoClick(self, locator: str):
-        if self.pagina is None:
-            print("ERRO: pagina = None")
-            return
-        try:
-            await self.pagina.locator(locator).click()
-            self.sinalGestao.emit(locator)
-        except Exception as e:
-            print(f"Erro ao clicar em {locator}: {e}")'''
-
     def clickSelecao(self, valor: str):
         if self.loop:
             asyncio.run_coroutine_threadsafe(
@@ -188,22 +173,50 @@ class PlayWrightBot(QThread):
     async def selecaoTratativa(self, valor: str):
         print(">>> selecaoTratativa chamado com:", valor)
         try:
-            # Clica no dropdown visual para abrir
+            # 1. Abre o dropdown visual
             await self.pagina.locator("treatment-step-three p-dropdown").click()
             await self.pagina.wait_for_timeout(500)
-            
-            # Clica na opção pelo texto dentro do painel que abre
-            await self.pagina.locator(
-                "treatment-step-three select option"
-            ).filter(has_text=valor).click()
-            
+
+            # 2. Aguarda o painel flutuante aparecer
+            await self.pagina.wait_for_selector(
+                "p-dropdownpanel li, .ui-dropdown-item, .ui-dropdown-items li",
+                state="visible",
+                timeout=5000
+            )
+
+            # 3. Clica na opção selecionada na UI
+            await self.pagina.locator(".ui-dropdown-item").filter(has_text=valor).click()
+
+            match valor:
+                case "Rádio":
+                    await self.pagina.locator("textarea").fill("Reportado para a operação. Condutor identificado utilizando rádio durante a condução em rodovia, ocasionando desvio de atenção e comprometendo a segurança viária. Reforçar a orientação para manter foco total na condução e utilizar o equipamento somente quando estritamente necessário e em condições seguras.")
+                case "Bocejo Delay":
+                    await self.pagina.locator("textarea").fill("Reportado para a operação. Condutor identificado bocejando de forma recorrente durante a condução, caracterizando indícios de sonolência.")
+                case "Comer e Beber ao Volante":
+                    await self.pagina.locator("textarea").fill("Reportado para a operação. Condutor identificado realizando alimentação durante a condução, o que compromete a atenção e o controle do veículo. Reforçar as diretrizes de segurança operacional")
+                case "Sonolência Delay":
+                    await self.pagina.locator("textarea").fill("Reportado para a operação. Motorista apresentando sonolência N1. Realizar a parada de 30 minutos.")
+                case "Invalidar - Teste - Manutenção":
+                    await self.pagina.locator("textarea").fill("Teste - Manuntenção.")
+                case "N1 - Orientar Parada 30 min":
+                    await self.pagina.locator("textarea").fill("Reportado para a operação. Motorista apresentando sonolência N1. Realizar a parada de 30 minutos.")
+                case "Bocejo":
+                    await self.pagina.locator("textarea").fill("Reportado para a operação. Condutor identificado bocejando de forma recorrente durante a condução, caracterizando indícios de sonolência.")
+                case "N2 - Orientar Parada 60 min":
+                    await self.pagina.locator("textarea").fill("Reportado para a operação. Motorista apresentando sonolência N2. Realizar a parada de 60 minutos.")
+                case "Conduta - Política de Consequência + Pontos no D-OLHO":
+                    await self.pagina.locator("textarea").fill("")
+                case "Atenção":
+                    await self.pagina.locator("textarea").fill("Reportado para a operação. Condutor demonstrando desatenção ao ambiente de condução, desviando o foco da direção. Reforçar orientação sobre direção defensiva e foco total na condução.")
+                case "Ausência - Solicitar ajuste - Gestão de Equipamentos CCI":
+                    await self.pagina.locator("textarea").fill("")
+    
             await self.pagina.wait_for_timeout(300)
-            self.sinalGestao.emit(valor)
             print(">>> Selecionado com sucesso:", valor)
+
         except Exception as e:
             print(">>> ERRO selecaoTratativa:", e)
 
-#UI 
 class janelaPrincipal (QMainWindow):
     def __init__(self):
         super().__init__()
@@ -283,7 +296,6 @@ class janelaPrincipal (QMainWindow):
 
         btnValido = QPushButton("Válido")
         btnValido.clicked.connect(self.abrirTratativa)
-        #btnValido.clicked.connect(self.aplicarGestao)
         btnValido.setStyleSheet("background-color: green;")
 
         btnInvalido = QPushButton("Inválido")
@@ -299,8 +311,8 @@ class janelaPrincipal (QMainWindow):
         layoutContainer.addLayout(acoes)
 
         #Informações na UI
-        direito = QWidget()
-        layoutDireito = QVBoxLayout(direito)
+        self.direito = QWidget()
+        self.layoutDireito = QVBoxLayout(self.direito)
         
         container2 = QWidget()
         # Remove tamanho fixo para ser responsivo
@@ -312,7 +324,7 @@ class janelaPrincipal (QMainWindow):
         layoutContainer2.setContentsMargins(10, 10, 10, 10)
         layoutContainer2.setSpacing(6)
         
-        layoutDireito.addWidget(container2, alignment=Qt.AlignTop | Qt.AlignRight)
+        self.layoutDireito.addWidget(container2, alignment=Qt.AlignTop | Qt.AlignRight)
 
         self.infoAlerta = QLabel()
         self.infoAlerta.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -347,7 +359,7 @@ class janelaPrincipal (QMainWindow):
         layoutContainer2.addWidget(self.infoMotorista)
 
         self.layoutHorizontal.addWidget(self.esquerdo)
-        self.layoutHorizontal.addWidget(direito)
+        self.layoutHorizontal.addWidget(self.direito)
 
         self.containerT = QWidget()
         self.containerT.setMinimumSize(500, 300)
@@ -355,12 +367,55 @@ class janelaPrincipal (QMainWindow):
         self.containerT.hide()  # ← oculto até clicar em Válido
         
         layoutTratativa = QVBoxLayout(self.containerT)
+        layoutTratativa.setContentsMargins(10, 10, 10, 10)
+        layoutTratativa.setSpacing(2)
+        layoutTratativa.setAlignment(Qt.AlignTop)
         
         self.tratativas = QComboBox(self)
         self.tratativas.setFixedWidth(400)
         self.tratativas.setPlaceholderText("Selecione sua tratativa")
-        self.tratativas.currentTextChanged.connect(self.sincronizarSelecao)
+        self.tratativas.currentTextChanged.connect(self.sincronizarSelecao)        
         
+        layoutTratativa.addWidget(self.tratativas)
+        layoutTratativa.addStretch()
+
+        self.escolhaConduta = QHBoxLayout()
+        self.escolhaConduta.setAlignment(Qt.AlignLeft)
+        self.cigarro = QPushButton("Cigarro")
+        self.cigarro.hide()
+        self.cigarro.setFixedWidth(150)
+        self.celular = QPushButton("Celular")
+        self.celular.setFixedWidth(150)
+        self.celular.hide()
+        self.escolhaConduta.addWidget(self.cigarro)
+        self.escolhaConduta.addWidget(self.celular)
+
+        layoutTratativa.addLayout(self.escolhaConduta)
+
+        self.escolhaAusencia = QHBoxLayout()
+        self.escolhaAusencia.setAlignment(Qt.AlignLeft)
+        self.cameraDesajustada = QPushButton("Câmera Desajustada")
+        self.cameraDesajustada.setFixedWidth(200)
+        self.cameraEscura = QPushButton("Câmera Escura")
+        self.cameraEscura.setFixedWidth(200)
+        self.cameraDefeito = QPushButton("Câmera com Defeito")
+        self.cameraDefeito.setFixedWidth(200)
+        self.escolhaAusencia.addWidget(self.cameraDesajustada)
+        self.escolhaAusencia.addWidget(self.cameraEscura)
+        self.escolhaAusencia.addWidget(self.cameraDefeito)
+
+        layoutTratativa.addLayout(self.escolhaAusencia)
+        layoutTratativa.addStretch() 
+
+        self.layoutEsquerdo.addWidget(self.containerT)
+
+        self.containerR = QWidget()
+        self.containerR.setMinimumSize(500, 300)
+        self.containerR.setObjectName("containerR")
+        self.containerR.hide()
+
+        layoutReport = QVBoxLayout(self.containerR)
+
         report = QHBoxLayout()
         reportado = QPushButton("Monitorado")
         reportado.setFixedHeight(30)
@@ -369,19 +424,16 @@ class janelaPrincipal (QMainWindow):
         report.addWidget(reportado)
         report.addWidget(operacao)
         
-        layoutTratativa.addWidget(self.tratativas, alignment=Qt.AlignCenter | Qt.AlignTop)
-        layoutTratativa.addStretch()
-        layoutTratativa.addLayout(report)
-        layoutTratativa.addStretch()
-        
-        self.layoutEsquerdo.addWidget(self.containerT)
+        layoutReport.addLayout(report)
+
+        self.layoutDireito.addWidget(self.containerR)
+
 
     #Iniciar a thread para abrir o site
     def iniciarThread(self):
         self.bot = PlayWrightBot("https://login.goawakecloud.com.br/pt-br/goawake?cc=true")
         self.bot.sinalInfo.connect(self.coletarInfo)
         self.bot.sinalDownload.connect(self.downloadConcluido)
-        #self.bot.sinalGestao.connect(self.aplicarGestao)
         self.bot.sinalTratativas.connect(self.listarTratativas)
         self.bot.start()
 
@@ -405,18 +457,15 @@ class janelaPrincipal (QMainWindow):
             return
         self._tratativaAberta = True
         
-        self.containerT.show()  # ← apenas exibe, já foi criado no __init__
-
-    '''def aplicarGestao(self):
-        if self.bot:
-            self.bot.clickNavegador(".playMovie")
-            self.bot.clickNavegador("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[2]/treatment-step-one/div/div/div[3]/div[3]/button")
-            self.bot.clickNavegador("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[2]/treatment-step-two/div/div/div[2]/div[3]/button")'''
+        self.containerT.show()
+        self.containerR.show()  
 
     def sincronizarSelecao(self, valor: str):
         print(">>> sincronizarSelecao chamado:", valor)
         if self.bot:
             self.bot.clickSelecao(valor)
+            self.celular.show()
+            self.cigarro.show()
 
     def listarTratativas(self, opcoes: list):
         if self.tratativas is None:
