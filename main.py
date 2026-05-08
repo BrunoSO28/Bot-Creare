@@ -14,6 +14,7 @@ class PlayWrightBot(QThread):
     sinalDownload = Signal(str)
     sinalTratativas = Signal(list)
     sinalPronto = Signal()
+    sinalTrativativaFinalizada = Signal()  # Novo sinal para quando a tratativa for finalizada
 
     def __init__(self, url):
         super().__init__()
@@ -21,6 +22,7 @@ class PlayWrightBot(QThread):
         self.loop = None
         self.pagina = None
         self.tratativas = None
+        self.processando_alerta = False  # Flag para controlar o processamento
 
     async def run_playwright(self):
         async with async_playwright() as pw:
@@ -96,6 +98,13 @@ class PlayWrightBot(QThread):
 
             #Coletar informações do Alerta
             while await tratativa.is_enabled():
+                # Aguarda se estiver processando manualmente (invalidando, etc)
+                while self.processando_alerta:
+                    await asyncio.sleep(0.5)
+                    print(">>> Aguardando processamento manual...")
+                
+                self.processando_alerta = True  # Marca que está processando
+                
                 await tratativa.click()
                 alerta = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[1]/p-dropdown/div/label").inner_text()
 
@@ -116,8 +125,22 @@ class PlayWrightBot(QThread):
                     download = await downloadVideo.value
 
                     diretorio = os.getcwd()
-
                     diretorioFinal = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera.mp4")
+
+                    # Apaga o vídeo anterior se existir para evitar erro de permissão
+                    if os.path.exists(diretorioFinal):
+                        try:
+                            os.remove(diretorioFinal)
+                            print(f">>> Vídeo anterior apagado antes do download")
+                        except Exception as e:
+                            print(f">>> Erro ao apagar vídeo anterior: {e}")
+                            # Aguarda um pouco e tenta novamente
+                            await self.pagina.wait_for_timeout(1000)
+                            try:
+                                os.remove(diretorioFinal)
+                                print(f">>> Vídeo anterior apagado na segunda tentativa")
+                            except Exception as e2:
+                                print(f">>> Erro na segunda tentativa: {e2}")
 
                     await download.save_as(diretorioFinal)
 
@@ -132,6 +155,10 @@ class PlayWrightBot(QThread):
                 await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[2]/treatment-step-two/div/div/div[2]/div[3]/button").click()
 
                 self.sinalPronto.emit()
+                
+                # Aguarda um pouco antes de verificar o próximo alerta
+                await asyncio.sleep(1)
+                self.processando_alerta = False  # Libera para próximo alerta
 
             while not self.isInterruptionRequested():
                 await asyncio.sleep(0.1)                      
@@ -145,7 +172,7 @@ class PlayWrightBot(QThread):
         asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self.run_playwright())
 
-    def clickSelecao(self, valor: str):
+    def clickSelecao(self, valor: str, janela_callback=None):
         if self.loop:
             asyncio.run_coroutine_threadsafe(
                 self.selecaoTratativa(valor), self.loop
@@ -183,9 +210,17 @@ class PlayWrightBot(QThread):
                 state="visible",
                 timeout=5000
             )
+            
+            # 3. Clica na opção selecionada na UI usando correspondência exata
+            # Busca todos os itens e filtra pelo texto exato
+            items = await self.pagina.locator(".ui-dropdown-item").all()
+            for item in items:
+                texto = await item.inner_text()
+                if texto.strip() == valor:
+                    await item.click()
+                    print(f">>> Item clicado: {valor}")
+                    break
 
-            # 3. Clica na opção selecionada na UI
-            await self.pagina.locator(".ui-dropdown-item").filter(has_text=valor).click()
 
             match valor:
                 case "Rádio":
@@ -204,18 +239,147 @@ class PlayWrightBot(QThread):
                     await self.pagina.locator("textarea").fill("Reportado para a operação. Condutor identificado bocejando de forma recorrente durante a condução, caracterizando indícios de sonolência.")
                 case "N2 - Orientar Parada 60 min":
                     await self.pagina.locator("textarea").fill("Reportado para a operação. Motorista apresentando sonolência N2. Realizar a parada de 60 minutos.")
-                case "Conduta - Política de Consequência + Pontos no D-OLHO":
-                    await self.pagina.locator("textarea").fill("")
                 case "Atenção":
                     await self.pagina.locator("textarea").fill("Reportado para a operação. Condutor demonstrando desatenção ao ambiente de condução, desviando o foco da direção. Reforçar orientação sobre direção defensiva e foco total na condução.")
-                case "Ausência - Solicitar ajuste - Gestão de Equipamentos CCI":
-                    await self.pagina.locator("textarea").fill("")
-    
+            
             await self.pagina.wait_for_timeout(300)
             print(">>> Selecionado com sucesso:", valor)
 
         except Exception as e:
             print(">>> ERRO selecaoTratativa:", e)
+
+    async def preencherTextoConduta(self, tipo_conduta: str):
+        """Preenche o textarea com o texto específico da conduta"""
+        print(f">>> preencherTextoConduta chamado com: {tipo_conduta}")
+        try:
+            texto = ""
+            if tipo_conduta == "Cigarro":
+                texto = "Reportado para a operação. Condutor identificado fumando durante a condução, comprometendo a segurança e contrariando as normas de conduta estabelecidas. Aplicar política de consequência conforme diretrizes da empresa e registrar pontos no sistema D-OLHO."
+            elif tipo_conduta == "Celular":
+                texto = "Reportado para a operação. Condutor identificado utilizando aparelho celular durante a condução, caracterizando grave infração de trânsito e comprometendo a segurança viária. Aplicar política de consequência conforme diretrizes da empresa e registrar pontos no sistema D-OLHO."
+            elif tipo_conduta == "Câmera Manipulada":
+                texto = "Reportado para a operação. Condutor identificado manipulando ou obstruindo a câmera de monitoramento durante a condução, caracterizando violação das normas de segurança e tentativa de burlar o sistema de monitoramento. Aplicar política de consequência conforme diretrizes da empresa e registrar pontos no sistema D-OLHO."
+            
+            await self.pagina.locator("textarea").fill(texto)
+            await self.pagina.wait_for_timeout(300)
+            print(f">>> Texto de conduta preenchido com sucesso: {tipo_conduta}")
+        except Exception as e:
+            print(f">>> ERRO preencherTextoConduta: {e}")
+
+    async def preencherTextoAusencia(self, tipo_ausencia: str):
+        """Preenche o textarea com o texto específico da ausência"""
+        print(f">>> preencherTextoAusencia chamado com: {tipo_ausencia}")
+        try:
+            texto = ""
+            if tipo_ausencia == "Câmera Desajustada":
+                texto = "Solicitação de ajuste técnico. Câmera de monitoramento identificada com desalinhamento ou posicionamento inadequado, prejudicando a captura correta das imagens. Necessário ajuste pela equipe de Gestão de Equipamentos CCI para garantir o funcionamento adequado do sistema de monitoramento."
+            elif tipo_ausencia == "Câmera Escura":
+                texto = "Solicitação de ajuste técnico. Câmera de monitoramento apresentando imagens escuras ou com baixa luminosidade, impossibilitando a análise adequada. Necessário verificação e ajuste pela equipe de Gestão de Equipamentos CCI para correção do problema de iluminação."
+            elif tipo_ausencia == "Câmera com Defeito":
+                texto = "Solicitação de manutenção técnica. Câmera de monitoramento apresentando defeito técnico, impossibilitando o registro adequado das imagens. Necessário intervenção imediata da equipe de Gestão de Equipamentos CCI para reparo ou substituição do equipamento."
+            
+            await self.pagina.locator("textarea").fill(texto)
+            await self.pagina.wait_for_timeout(300)
+            print(f">>> Texto de ausência preenchido com sucesso: {tipo_ausencia}")
+        except Exception as e:
+            print(f">>> ERRO preencherTextoAusencia: {e}")
+
+    def clickConduta(self, tipo_conduta: str):
+        """Método chamado quando um botão de conduta é clicado"""
+        if self.loop:
+            asyncio.run_coroutine_threadsafe(
+                self.preencherTextoConduta(tipo_conduta), self.loop
+            )
+
+    def clickAusencia(self, tipo_ausencia: str):
+        """Método chamado quando um botão de ausência é clicado"""
+        if self.loop:
+            asyncio.run_coroutine_threadsafe(
+                self.preencherTextoAusencia(tipo_ausencia), self.loop
+            )
+    async def alertaMonitorado(self):
+        await self.pagina.locator("textarea").fill("Monitorado")
+        await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
+        await self.pagina.wait_for_timeout(300)
+        await self.pagina.get_by_role("button", name="Concluir").click()
+        self.sinalTrativativaFinalizada.emit()  # Notifica que a tratativa foi finalizada
+        print(">>> Tratativa 'Monitorado' finalizada")
+
+    def clickMonitorado(self):
+        if self.loop:
+            asyncio.run_coroutine_threadsafe(self.alertaMonitorado(), self.loop)
+
+    async def invalidarAlerta(self):
+        """Invalida o alerta atual voltando e selecionando 'Alerta invalidado'"""
+        try:
+            print(">>> Iniciando invalidação do alerta")
+            self.processando_alerta = True  # Bloqueia o loop principal
+            
+            # Primeiro clique no botão Voltar
+            botao_voltar = self.pagina.get_by_role("button", name="Voltar")
+            await botao_voltar.click()
+            await self.pagina.wait_for_timeout(100)
+            print(">>> Primeiro 'Voltar' clicado")
+            
+            # Segundo clique no botão Voltar
+            await botao_voltar.click()
+            await self.pagina.wait_for_timeout(300)
+            print(">>> Segundo 'Voltar' clicado")
+            
+            # Aguarda a página carregar
+            await self.pagina.wait_for_timeout(300)
+            
+            # Seleciona o dropdown que NÃO está desabilitado
+            dropdown_selector = ".ui-dropdown:not(.ui-state-disabled)"
+            await self.pagina.wait_for_selector(dropdown_selector, state="visible", timeout=5000)
+            
+            # Clica no dropdown correto
+            await self.pagina.locator(dropdown_selector).first.click()
+            await self.pagina.wait_for_timeout(300)
+            print(">>> Dropdown aberto")
+            
+            # Aguarda as opções do dropdown aparecerem
+            await self.pagina.wait_for_selector(
+                "p-dropdownpanel li, .ui-dropdown-item, .ui-dropdown-items li",
+                state="visible",
+                timeout=5000
+            )
+            
+            # Seleciona "Alerta invalidado"
+            await self.pagina.locator("li:has-text('Alerta invalidado')").click()
+            await self.pagina.wait_for_timeout(100)
+            print(">>> 'Alerta invalidado' selecionado")
+
+            await self.pagina.get_by_role("button", name="Ok").click()
+            await self.pagina.wait_for_timeout(100)
+
+            await self.pagina.get_by_role("button", name="Finalizar").click()
+            await self.pagina.wait_for_timeout(100)
+
+            await self.pagina.get_by_role("button", name="Finalizar").nth(1).click()
+            await self.pagina.wait_for_timeout(100)
+
+            await self.pagina.get_by_role("button", name="Ok").click()
+            await self.pagina.wait_for_timeout(100)
+            
+            # Emite sinal de tratativa finalizada para apagar o vídeo
+            self.sinalTrativativaFinalizada.emit()
+            print(">>> Invalidação concluída com sucesso - Vídeo será apagado")
+            
+        except Exception as e:
+            print(f">>> ERRO invalidarAlerta: {e}")
+            import traceback
+            traceback.print_exc()
+        finally:
+            # Sempre libera a flag, mesmo em caso de erro
+            self.processando_alerta = False
+            print(">>> Flag processando_alerta liberada")
+
+    def clickInvalidar(self):
+        if self.loop:
+            asyncio.run_coroutine_threadsafe(self.invalidarAlerta(), self.loop)
+
+
 
 class janelaPrincipal (QMainWindow):
     def __init__(self):
@@ -261,6 +425,12 @@ class janelaPrincipal (QMainWindow):
         self.player = QMediaPlayer(self)
         self.player.setVideoOutput(self.caixaVideo)
         
+        # Configura o vídeo para repetir em loop
+        self.player.setLoops(QMediaPlayer.Loops.Infinite)
+        
+        # Armazena o caminho do vídeo atual para poder apagá-lo depois
+        self.video_atual = None
+        
 
         #Controles 
         controles = QHBoxLayout()
@@ -294,20 +464,21 @@ class janelaPrincipal (QMainWindow):
         acoes = QHBoxLayout()
         acoes.setSpacing(10)
 
-        btnValido = QPushButton("Válido")
-        btnValido.clicked.connect(self.abrirTratativa)
-        btnValido.setStyleSheet("background-color: green;")
+        self.btnValido = QPushButton("Válido")
+        self.btnValido.clicked.connect(self.abrirTratativa)
+        self.btnValido.setStyleSheet("background-color: green;")
 
-        btnInvalido = QPushButton("Inválido")
-        btnInvalido.setStyleSheet("background-color:#990000;")
+        self.btnInvalido = QPushButton("Inválido")
+        self.btnInvalido.clicked.connect(self.clickInvalidar)
+        self.btnInvalido.setStyleSheet("background-color:#990000;")
         
-        for btn in [btnValido, btnInvalido]:
+        for btn in [self.btnValido, self.btnInvalido]:
             btn.setFont(fonte_pequena)
             btn.setFixedHeight(38)         
             btn.setFixedWidth(120)
 
-        acoes.addWidget(btnValido)
-        acoes.addWidget(btnInvalido)
+        acoes.addWidget(self.btnValido)
+        acoes.addWidget(self.btnInvalido)
         layoutContainer.addLayout(acoes)
 
         #Informações na UI
@@ -382,23 +553,36 @@ class janelaPrincipal (QMainWindow):
         self.escolhaConduta = QHBoxLayout()
         self.escolhaConduta.setAlignment(Qt.AlignLeft)
         self.cigarro = QPushButton("Cigarro")
+        self.cigarro.clicked.connect(lambda: self.bot.clickConduta("Cigarro"))
         self.cigarro.hide()
         self.cigarro.setFixedWidth(150)
         self.celular = QPushButton("Celular")
+        self.celular.clicked.connect(lambda: self.bot.clickConduta("Celular"))
         self.celular.setFixedWidth(150)
         self.celular.hide()
+        self.cameraManipulada = QPushButton("Câmera Manipulada")
+        self.cameraManipulada.clicked.connect(lambda: self.bot.clickConduta("Câmera Manipulada"))
+        self.cameraManipulada.setFixedWidth(150)
+        self.cameraManipulada.hide()
         self.escolhaConduta.addWidget(self.cigarro)
         self.escolhaConduta.addWidget(self.celular)
+        self.escolhaConduta.addWidget(self.cameraManipulada)
 
         layoutTratativa.addLayout(self.escolhaConduta)
 
         self.escolhaAusencia = QHBoxLayout()
         self.escolhaAusencia.setAlignment(Qt.AlignLeft)
         self.cameraDesajustada = QPushButton("Câmera Desajustada")
+        self.cameraDesajustada.clicked.connect(lambda: self.bot.clickAusencia("Câmera Desajustada"))
+        self.cameraDesajustada.hide()
         self.cameraDesajustada.setFixedWidth(200)
         self.cameraEscura = QPushButton("Câmera Escura")
+        self.cameraEscura.clicked.connect(lambda: self.bot.clickAusencia("Câmera Escura"))
+        self.cameraEscura.hide()
         self.cameraEscura.setFixedWidth(200)
         self.cameraDefeito = QPushButton("Câmera com Defeito")
+        self.cameraDefeito.clicked.connect(lambda: self.bot.clickAusencia("Câmera com Defeito"))
+        self.cameraDefeito.hide()
         self.cameraDefeito.setFixedWidth(200)
         self.escolhaAusencia.addWidget(self.cameraDesajustada)
         self.escolhaAusencia.addWidget(self.cameraEscura)
@@ -416,15 +600,16 @@ class janelaPrincipal (QMainWindow):
 
         layoutReport = QVBoxLayout(self.containerR)
 
-        report = QHBoxLayout()
-        reportado = QPushButton("Monitorado")
-        reportado.setFixedHeight(30)
-        operacao = QPushButton("Reportar para a Operação")
-        operacao.setFixedHeight(30)
-        report.addWidget(reportado)
-        report.addWidget(operacao)
+        self.report = QHBoxLayout()
+        self.reportado = QPushButton("Monitorado")
+        self.reportado.clicked.connect(lambda: self.bot.clickMonitorado())
+        self.reportado.setFixedHeight(30)
+        self.operacao = QPushButton("Reportar para a Operação")
+        self.operacao.setFixedHeight(30)
+        self.report.addWidget(self.reportado)
+        self.report.addWidget(self.operacao)
         
-        layoutReport.addLayout(report)
+        layoutReport.addLayout(self.report)
 
         self.layoutDireito.addWidget(self.containerR)
 
@@ -435,6 +620,7 @@ class janelaPrincipal (QMainWindow):
         self.bot.sinalInfo.connect(self.coletarInfo)
         self.bot.sinalDownload.connect(self.downloadConcluido)
         self.bot.sinalTratativas.connect(self.listarTratativas)
+        self.bot.sinalTrativativaFinalizada.connect(self.apagarVideo)  # Conecta o sinal para apagar o vídeo
         self.bot.start()
 
     #Coletar as informações do site
@@ -444,12 +630,76 @@ class janelaPrincipal (QMainWindow):
         self.infoFilial.setText(filial)
         self.infoEmpresa.setText(empresa)
         self.infoMotorista.setText(motorista)
+        
+        # Habilita os botões para o novo alerta
+        self.habilitarBotoesAcao()
+        
+        # Reseta a flag de tratativa aberta
+        if hasattr(self, '_tratativaAberta'):
+            delattr(self, '_tratativaAberta')
+        
         self.pedirTratativas()
 
     #Inicia o vídeo assim que ele é baixado
     def downloadConcluido(self, diretorioFinal):
+        # Armazena o caminho do vídeo atual
+        self.video_atual = diretorioFinal
         self.player.setSource(QUrl.fromLocalFile(diretorioFinal))
         self.player.play()
+
+    #Apaga o vídeo quando a tratativa é finalizada
+    def apagarVideo(self):
+        """Apaga o vídeo atual para liberar espaço para o próximo"""
+        try:
+            if self.video_atual and os.path.exists(self.video_atual):
+                print(f">>> Iniciando processo de exclusão do vídeo: {self.video_atual}")
+                
+                # Para o player antes de apagar
+                self.player.stop()
+                self.player.setSource(QUrl())
+                
+                # Força a coleta de lixo para liberar recursos
+                import gc
+                gc.collect()
+                
+                # Usa QTimer para aguardar e tentar apagar
+                from PySide6.QtCore import QTimer
+                QTimer.singleShot(1000, lambda: self._tentarApagarVideo(self.video_atual))
+                
+                # Limpa a referência
+                self.video_atual = None
+                
+                # Atualiza o status
+                self.status_label.setText("Aguardando próximo vídeo...")
+            else:
+                print(">>> Nenhum vídeo para apagar")
+        except Exception as e:
+            print(f">>> ERRO ao apagar vídeo: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _tentarApagarVideo(self, caminho_video):
+        """Tenta apagar o vídeo com múltiplas tentativas"""
+        max_tentativas = 5
+        for tentativa in range(max_tentativas):
+            try:
+                if os.path.exists(caminho_video):
+                    os.remove(caminho_video)
+                    print(f">>> Vídeo apagado com sucesso: {caminho_video}")
+                    return
+                else:
+                    print(f">>> Vídeo já não existe: {caminho_video}")
+                    return
+            except PermissionError as e:
+                print(f">>> Tentativa {tentativa + 1}/{max_tentativas} falhou: {e}")
+                if tentativa < max_tentativas - 1:
+                    import time
+                    time.sleep(0.5)
+                else:
+                    print(f">>> ERRO: Não foi possível apagar o vídeo após {max_tentativas} tentativas")
+            except Exception as e:
+                print(f">>> ERRO inesperado ao apagar vídeo: {e}")
+                break
 
     #Tratativas do alerta quando o botão de válidar é apertado
     def abrirTratativa(self):
@@ -457,16 +707,49 @@ class janelaPrincipal (QMainWindow):
             return
         self._tratativaAberta = True
         
+        # Desabilita os botões após clicar
+        self.desabilitarBotoesAcao()
+        
         self.containerT.show()
-        self.containerR.show()  
+        self.containerR.show()
+    
+    def clickInvalidar(self):
+        """Método chamado quando o botão Inválido é clicado"""
+        # Desabilita os botões imediatamente
+        self.desabilitarBotoesAcao()
+        
+        # Chama o método do bot
+        if self.bot:
+            self.bot.clickInvalidar()
+    
+    def desabilitarBotoesAcao(self):
+        """Desabilita os botões Válido e Inválido"""
+        self.btnValido.setEnabled(False)
+        self.btnInvalido.setEnabled(False)
+        print(">>> Botões de ação desabilitados")
+    
+    def habilitarBotoesAcao(self):
+        """Habilita os botões Válido e Inválido"""
+        self.btnValido.setEnabled(True)
+        self.btnInvalido.setEnabled(True)
+        print(">>> Botões de ação habilitados")  
 
     def sincronizarSelecao(self, valor: str):
         print(">>> sincronizarSelecao chamado:", valor)
+        
+        # Primeiro oculta todos os botões
+        self.ocultarTodosBotoes()
+        
+        # Depois mostra os botões apropriados baseado na seleção
+        if valor == "Conduta - Política de Consequência + Pontos no D-OLHO":
+            self.mostrarConduta()
+        elif valor == "Ausência - Solicitar ajuste - Gestão de Equipamentos CCI":
+            self.mostrarAusencia()
+        
+        # Sincroniza com o bot
         if self.bot:
-            self.bot.clickSelecao(valor)
-            self.celular.show()
-            self.cigarro.show()
-
+            self.bot.clickSelecao(valor, janela_callback=self)
+        
     def listarTratativas(self, opcoes: list):
         if self.tratativas is None:
             self._tratativas_pendentes = opcoes  # guarda para usar depois
@@ -483,6 +766,37 @@ class janelaPrincipal (QMainWindow):
         asyncio.run_coroutine_threadsafe(
         self.bot.coletarTratativas(), self.bot.loop
     )
+
+    def mostrarConduta(self):
+        # Oculta botões de ausência primeiro
+        self.cameraDesajustada.hide()
+        self.cameraEscura.hide()
+        self.cameraDefeito.hide()
+        # Mostra botões de conduta
+        self.celular.show()
+        self.cigarro.show()
+        self.cameraManipulada.show()
+        print(">>> Botões de conduta exibidos")
+
+    def mostrarAusencia(self):
+        # Oculta botões de conduta primeiro
+        self.celular.hide()
+        self.cigarro.hide()
+        self.cameraManipulada.hide()
+        # Mostra botões de ausência
+        self.cameraDesajustada.show()
+        self.cameraEscura.show()
+        self.cameraDefeito.show()
+        print(">>> Botões de ausência exibidos")
+    
+    def ocultarTodosBotoes(self):
+        # Oculta todos os botões de escolha
+        self.celular.hide()
+        self.cigarro.hide()
+        self.cameraManipulada.hide()
+        self.cameraDesajustada.hide()
+        self.cameraEscura.hide()
+        self.cameraDefeito.hide()
 
     def ajustarJanelaAoMonitor(self, percentual=80):
         """
