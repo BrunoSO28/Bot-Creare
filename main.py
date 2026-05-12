@@ -17,6 +17,7 @@ class PlayWrightBot(QThread):
     sinalTrativativaFinalizada = Signal()  # Novo sinal para quando a tratativa for finalizada
     sinalColunas = Signal(int)  # Novo sinal para enviar a quantidade de colunas
     sinalVideosCarregados = Signal()  # Novo sinal para quando todos os vídeos forem selecionados
+    sinalLiberarVideo = Signal()
 
     def __init__(self, url):
         super().__init__()
@@ -25,6 +26,7 @@ class PlayWrightBot(QThread):
         self.pagina = None
         self.tratativas = None
         self.processando_alerta = False  # Flag para controlar o processamento
+        self._video_liberado = asyncio.Event()
 
     async def run_playwright(self):
         async with async_playwright() as pw:
@@ -122,27 +124,17 @@ class PlayWrightBot(QThread):
                 await self.pagina.locator(".playMovie").first.dblclick()
                 await self.pagina.wait_for_timeout(1000)
                 videoDl = self.pagina.locator("xpath=/html/body/dinamic-dialog/div/div/ng-component/div/ul/li[1]/div/div/app-download-button/button/i")
+                
+                self._video_liberado.clear()
+                self.sinalLiberarVideo.emit()
+                await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
+
                 async with self.pagina.expect_download() as downloadVideo:
                     await videoDl.click()
                     download = await downloadVideo.value
 
                     diretorio = os.getcwd()
                     diretorioFinal = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera.mp4")
-
-                    # Apaga o vídeo anterior se existir para evitar erro de permissão
-                    if os.path.exists(diretorioFinal):
-                        try:
-                            os.remove(diretorioFinal)
-                            print(f">>> Vídeo anterior apagado antes do download")
-                        except Exception as e:
-                            print(f">>> Erro ao apagar vídeo anterior: {e}")
-                            # Aguarda um pouco e tenta novamente
-                            await self.pagina.wait_for_timeout(1000)
-                            try:
-                                os.remove(diretorioFinal)
-                                print(f">>> Vídeo anterior apagado na segunda tentativa")
-                            except Exception as e2:
-                                print(f">>> Erro na segunda tentativa: {e2}")
 
                     await download.save_as(diretorioFinal)
 
@@ -322,10 +314,6 @@ class PlayWrightBot(QThread):
         await self.pagina.get_by_role("button", name="Concluir").click()
         await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
         await self.pagina.wait_for_timeout(300)
-        await self.pagina.locator("textarea").fill("Monitorado")
-        await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
-        await self.pagina.wait_for_timeout(300)
-        await self.pagina.get_by_role("button", name="Concluir").click()
         self.sinalTrativativaFinalizada.emit()  # Notifica que a tratativa foi finalizada
         print(">>> Tratativa 'Monitorado' finalizada")
 
@@ -389,21 +377,6 @@ class PlayWrightBot(QThread):
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
             await self.pagina.wait_for_timeout(300)
             
-
-            await self.pagina.wait_for_timeout(100)
-            print(">>> 'Alerta invalidado' selecionado")
-
-            await self.pagina.get_by_role("button", name="Ok").click()
-            await self.pagina.wait_for_timeout(100)
-
-            await self.pagina.get_by_role("button", name="Finalizar").click()
-            await self.pagina.wait_for_timeout(100)
-
-            await self.pagina.get_by_role("button", name="Finalizar").nth(1).click()
-            await self.pagina.wait_for_timeout(100)
-
-            await self.pagina.get_by_role("button", name="Ok").click()
-            await self.pagina.wait_for_timeout(100)
             
             # Emite sinal de tratativa finalizada para apagar o vídeo
             self.sinalTrativativaFinalizada.emit()
@@ -670,10 +643,11 @@ class janelaPrincipal (QMainWindow):
         self.bot.sinalInfo.connect(self.coletarInfo)
         self.bot.sinalDownload.connect(self.downloadConcluido)
         self.bot.sinalTratativas.connect(self.listarTratativas)
-        self.bot.sinalTrativativaFinalizada.connect(self.apagarVideo)  # Conecta o sinal para apagar o vídeo
         self.bot.sinalColunas.connect(self.atualizarColunas)  # Conecta o sinal para atualizar a contagem
         self.bot.sinalVideosCarregados.connect(self.habilitarBotaoInvalidar)  # Conecta o sinal para habilitar botão Inválido
+        self.bot.sinalLiberarVideo.connect(self.liberarVideoAtual)
         self.bot.start()
+
 
     #Coletar as informações do site
     def coletarInfo(self, alerta, placa,filial, empresa, motorista):
@@ -716,59 +690,36 @@ class janelaPrincipal (QMainWindow):
         self.player.setSource(QUrl.fromLocalFile(diretorioFinal))
         self.player.play()
 
-    #Apaga o vídeo quando a tratativa é finalizada
-    def apagarVideo(self):
-        """Apaga o vídeo atual para liberar espaço para o próximo"""
+    def liberarVideoAtual(self):
+        """Para o player e libera o arquivo de vídeo antes do próximo download"""
         try:
+            self.player.stop()
+            self.player.setSource(QUrl())  # desvincula o arquivo
+            self.ocultarTodosBotoes()
+            
+            # Apaga o vídeo anterior se existir
             if self.video_atual and os.path.exists(self.video_atual):
-                print(f">>> Iniciando processo de exclusão do vídeo: {self.video_atual}")
-                
-                # Para o player antes de apagar
-                self.player.stop()
-                self.player.setSource(QUrl())
-                
-                # Força a coleta de lixo para liberar recursos
-                import gc
-                gc.collect()
-                
-                # Usa QTimer para aguardar e tentar apagar
-                from PySide6.QtCore import QTimer
-                QTimer.singleShot(1000, lambda: self._tentarApagarVideo(self.video_atual))
-                
-                # Limpa a referência
+                import time
+                for tentativa in range(5):
+                    try:
+                        os.remove(self.video_atual)
+                        print(f">>> Vídeo anterior apagado: {self.video_atual}")
+                        break
+                    except PermissionError:
+                        print(f">>> Tentativa {tentativa + 1}/5 falhou, aguardando...")
+                        time.sleep(0.3)
                 self.video_atual = None
-                
-                # Atualiza o status
-                self.status_label.setText("Aguardando próximo vídeo...")
-            else:
-                print(">>> Nenhum vídeo para apagar")
+
         except Exception as e:
-            print(f">>> ERRO ao apagar vídeo: {e}")
-            import traceback
-            traceback.print_exc()
-    
-    def _tentarApagarVideo(self, caminho_video):
-        """Tenta apagar o vídeo com múltiplas tentativas"""
-        max_tentativas = 5
-        for tentativa in range(max_tentativas):
-            try:
-                if os.path.exists(caminho_video):
-                    os.remove(caminho_video)
-                    print(f">>> Vídeo apagado com sucesso: {caminho_video}")
-                    return
-                else:
-                    print(f">>> Vídeo já não existe: {caminho_video}")
-                    return
-            except PermissionError as e:
-                print(f">>> Tentativa {tentativa + 1}/{max_tentativas} falhou: {e}")
-                if tentativa < max_tentativas - 1:
-                    import time
-                    time.sleep(0.5)
-                else:
-                    print(f">>> ERRO: Não foi possível apagar o vídeo após {max_tentativas} tentativas")
-            except Exception as e:
-                print(f">>> ERRO inesperado ao apagar vídeo: {e}")
-                break
+            print(f">>> ERRO ao liberar vídeo: {e}")
+        finally:
+            # Sempre sinaliza para o bot que pode prosseguir
+            asyncio.run_coroutine_threadsafe(
+                self._marcarVideoLiberado(), self.bot.loop
+            )
+
+    async def _marcarVideoLiberado(self):  # método auxiliar
+        self.bot._video_liberado.set()
 
     #Tratativas do alerta quando o botão de válidar é apertado
     def abrirTratativa(self):
