@@ -322,6 +322,10 @@ class PlayWrightBot(QThread):
         await self.pagina.get_by_role("button", name="Concluir").click()
         await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
         await self.pagina.wait_for_timeout(300)
+        await self.pagina.locator("textarea").fill("Monitorado")
+        await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
+        await self.pagina.wait_for_timeout(300)
+        await self.pagina.get_by_role("button", name="Concluir").click()
         self.sinalTrativativaFinalizada.emit()  # Notifica que a tratativa foi finalizada
         print(">>> Tratativa 'Monitorado' finalizada")
 
@@ -386,6 +390,21 @@ class PlayWrightBot(QThread):
             await self.pagina.wait_for_timeout(300)
             
 
+            await self.pagina.wait_for_timeout(100)
+            print(">>> 'Alerta invalidado' selecionado")
+
+            await self.pagina.get_by_role("button", name="Ok").click()
+            await self.pagina.wait_for_timeout(100)
+
+            await self.pagina.get_by_role("button", name="Finalizar").click()
+            await self.pagina.wait_for_timeout(100)
+
+            await self.pagina.get_by_role("button", name="Finalizar").nth(1).click()
+            await self.pagina.wait_for_timeout(100)
+
+            await self.pagina.get_by_role("button", name="Ok").click()
+            await self.pagina.wait_for_timeout(100)
+            
             # Emite sinal de tratativa finalizada para apagar o vídeo
             self.sinalTrativativaFinalizada.emit()
             print(">>> Invalidação concluída com sucesso - Vídeo será apagado")
@@ -669,6 +688,8 @@ class janelaPrincipal (QMainWindow):
         self.btnValido.setEnabled(False)
         self.btnInvalido.setEnabled(False)
         print(">>> Botões desabilitados, aguardando carregamento dos vídeos...")
+        # Habilita os botões para o novo alerta
+        self.habilitarBotoesAcao()
         
         # Reseta a flag de tratativa aberta
         if hasattr(self, '_tratativaAberta'):
