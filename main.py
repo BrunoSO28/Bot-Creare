@@ -15,6 +15,8 @@ class PlayWrightBot(QThread):
     sinalTratativas = Signal(list)
     sinalPronto = Signal()
     sinalTrativativaFinalizada = Signal()  # Novo sinal para quando a tratativa for finalizada
+    sinalColunas = Signal(int)  # Novo sinal para enviar a quantidade de colunas
+    sinalVideosCarregados = Signal()  # Novo sinal para quando todos os vídeos forem selecionados
 
     def __init__(self, url):
         super().__init__()
@@ -92,7 +94,7 @@ class PlayWrightBot(QThread):
             #await self.pagina.pause()
             await self.pagina.get_by_role("button", name="Entrar").click()
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").click()
-            await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-header/div/div[2]/div/div[3]/p-checkbox/div/div[2]/span").click()
+            #await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-header/div/div[2]/div/div[3]/p-checkbox/div/div[2]/span").click()
             tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button/img')
             #await self.pagina.pause()
 
@@ -116,8 +118,8 @@ class PlayWrightBot(QThread):
                 
                 motorista = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[5]/p").inner_text()
                 
-                #Download do vídeo
-                await self.pagina.locator(".playMovie").dblclick()
+                #Download do vídeo - usa .first para pegar o primeiro elemento quando há múltiplos
+                await self.pagina.locator(".playMovie").first.dblclick()
                 await self.pagina.wait_for_timeout(1000)
                 videoDl = self.pagina.locator("xpath=/html/body/dinamic-dialog/div/div/ng-component/div/ul/li[1]/div/div/app-download-button/button/i")
                 async with self.pagina.expect_download() as downloadVideo:
@@ -150,9 +152,25 @@ class PlayWrightBot(QThread):
                 
                 await self.pagina.mouse.click(400, 10)
 
-                await self.pagina.locator(".playMovie").click()
-                await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[2]/treatment-step-one/div/div/div[3]/div[3]/button").click()
-                await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[2]/treatment-step-two/div/div/div[2]/div[3]/button").click()
+                # Coleta os vídeos do alerta e clica em cada um
+                videosAlerta = self.pagina.locator('ul[style="margin-bottom: 20px;"] li#itemToHistory')
+                total = await videosAlerta.count()  # Adiciona await aqui
+                print(f">>> Total de vídeos do alerta: {total}")
+                
+                for i in range(total):
+                    await videosAlerta.nth(i).click()  # Adiciona await aqui também
+                    await self.pagina.wait_for_timeout(300)  # Aguarda um pouco entre os cliques
+                
+                print(f">>> Todos os {total} vídeos foram selecionados")
+                self.sinalVideosCarregados.emit()  # Emite sinal indicando que todos os vídeos foram carregados
+                
+                # Conta as linhas da tabela
+                self.colunas = await self.pagina.locator('table:has(th:text("Tipo Alerta")) tbody tr').count()
+                print(f">>> Quantidade de colunas: {self.colunas}")
+                self.sinalColunas.emit(self.colunas)  # Emite o sinal com a quantidade de colunas
+                
+                await self.pagina.get_by_role("button", name="Aplicar gestão").click()
+                await self.pagina.get_by_role("button", name="Aplicar gestão").click()
 
                 self.sinalPronto.emit()
                 
@@ -298,10 +316,12 @@ class PlayWrightBot(QThread):
                 self.preencherTextoAusencia(tipo_ausencia), self.loop
             )
     async def alertaMonitorado(self):
-        await self.pagina.locator("textarea").fill("Monitorado")
+        #await self.pagina.locator("textarea").fill("Monitorado")
         await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
         await self.pagina.wait_for_timeout(300)
         await self.pagina.get_by_role("button", name="Concluir").click()
+        await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
+        await self.pagina.wait_for_timeout(300)
         self.sinalTrativativaFinalizada.emit()  # Notifica que a tratativa foi finalizada
         print(">>> Tratativa 'Monitorado' finalizada")
 
@@ -347,21 +367,25 @@ class PlayWrightBot(QThread):
             
             # Seleciona "Alerta invalidado"
             await self.pagina.locator("li:has-text('Alerta invalidado')").click()
-            await self.pagina.wait_for_timeout(100)
+            await self.pagina.wait_for_timeout(300)
             print(">>> 'Alerta invalidado' selecionado")
 
             await self.pagina.get_by_role("button", name="Ok").click()
-            await self.pagina.wait_for_timeout(100)
+            await self.pagina.wait_for_timeout(300)
 
             await self.pagina.get_by_role("button", name="Finalizar").click()
-            await self.pagina.wait_for_timeout(100)
+            await self.pagina.wait_for_timeout(300)
 
             await self.pagina.get_by_role("button", name="Finalizar").nth(1).click()
-            await self.pagina.wait_for_timeout(100)
+            await self.pagina.wait_for_timeout(300)
 
             await self.pagina.get_by_role("button", name="Ok").click()
-            await self.pagina.wait_for_timeout(100)
+            await self.pagina.wait_for_timeout(300)
+
+            await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
+            await self.pagina.wait_for_timeout(300)
             
+
             # Emite sinal de tratativa finalizada para apagar o vídeo
             self.sinalTrativativaFinalizada.emit()
             print(">>> Invalidação concluída com sucesso - Vídeo será apagado")
@@ -427,6 +451,13 @@ class janelaPrincipal (QMainWindow):
         
         # Configura o vídeo para repetir em loop
         self.player.setLoops(QMediaPlayer.Loops.Infinite)
+
+        # Label para mostrar a quantidade de alertas já monitorados
+        self.labelColunas = QLabel()
+        self.labelColunas.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.labelColunas.setFont(QFont("Arial", 10, QFont.Bold))
+        self.labelColunas.setStyleSheet("color: #0066cc; padding: 5px;")
+        layoutContainer.addWidget(self.labelColunas)
         
         # Armazena o caminho do vídeo atual para poder apagá-lo depois
         self.video_atual = None
@@ -621,6 +652,8 @@ class janelaPrincipal (QMainWindow):
         self.bot.sinalDownload.connect(self.downloadConcluido)
         self.bot.sinalTratativas.connect(self.listarTratativas)
         self.bot.sinalTrativativaFinalizada.connect(self.apagarVideo)  # Conecta o sinal para apagar o vídeo
+        self.bot.sinalColunas.connect(self.atualizarColunas)  # Conecta o sinal para atualizar a contagem
+        self.bot.sinalVideosCarregados.connect(self.habilitarBotaoInvalidar)  # Conecta o sinal para habilitar botão Inválido
         self.bot.start()
 
     #Coletar as informações do site
@@ -631,14 +664,29 @@ class janelaPrincipal (QMainWindow):
         self.infoEmpresa.setText(empresa)
         self.infoMotorista.setText(motorista)
         
-        # Habilita os botões para o novo alerta
-        self.habilitarBotoesAcao()
+        # Desabilita ambos os botões inicialmente
+        # Serão habilitados apenas após todos os vídeos serem carregados
+        self.btnValido.setEnabled(False)
+        self.btnInvalido.setEnabled(False)
+        print(">>> Botões desabilitados, aguardando carregamento dos vídeos...")
         
         # Reseta a flag de tratativa aberta
         if hasattr(self, '_tratativaAberta'):
             delattr(self, '_tratativaAberta')
         
         self.pedirTratativas()
+    
+    def habilitarBotaoInvalidar(self):
+        """Habilita ambos os botões após todos os vídeos serem carregados"""
+        self.btnValido.setEnabled(True)
+        self.btnInvalido.setEnabled(True)
+        print(">>> Botões Válido e Inválido habilitados - Todos os vídeos foram carregados")
+
+    #Atualiza o label com a quantidade de alertas já monitorados
+    def atualizarColunas(self, quantidade):
+        """Atualiza o label com a quantidade de alertas já monitorados"""
+        self.labelColunas.setText(f"Alerta já foi visto {quantidade} vezes ")
+        print(f">>> Label atualizado: {quantidade} alertas monitorados")
 
     #Inicia o vídeo assim que ele é baixado
     def downloadConcluido(self, diretorioFinal):
