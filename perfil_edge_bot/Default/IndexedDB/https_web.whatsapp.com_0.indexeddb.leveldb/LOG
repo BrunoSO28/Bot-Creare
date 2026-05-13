@@ -1,0 +1,18 @@
+2026/05/13-18:34:33.655 732c Reusing MANIFEST C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/05/13-18:34:33.656 732c Recovering log #176
+2026/05/13-18:34:33.698 732c Reusing old log C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/000176.log 
+2026/05/13-18:34:39.053 6e20 Level-0 table #184: started
+2026/05/13-18:34:39.077 6e20 Level-0 table #184: 1210880 bytes OK
+2026/05/13-18:34:39.079 6e20 Delete type=0 #176
+2026/05/13-18:35:00.695 732c Compacting 1@1 + 4@2 files
+2026/05/13-18:35:00.750 732c Generated table #185@1: 64250 keys, 2253786 bytes
+2026/05/13-18:35:00.792 732c Generated table #186@1: 36217 keys, 2192600 bytes
+2026/05/13-18:35:00.832 732c Generated table #187@1: 33658 keys, 2192555 bytes
+2026/05/13-18:35:00.864 732c Generated table #188@1: 39539 keys, 1093980 bytes
+2026/05/13-18:35:00.864 732c Compacted 1@1 + 4@2 files => 7732921 bytes
+2026/05/13-18:35:00.865 732c compacted to: files[ 0 0 4 0 0 0 0 ]
+2026/05/13-18:35:00.866 732c Delete type=2 #178
+2026/05/13-18:35:00.866 732c Delete type=2 #179
+2026/05/13-18:35:00.866 732c Delete type=2 #180
+2026/05/13-18:35:00.866 732c Delete type=2 #181
+2026/05/13-18:35:00.866 732c Delete type=2 #184

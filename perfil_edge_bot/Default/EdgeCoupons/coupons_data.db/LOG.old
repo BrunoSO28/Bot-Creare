@@ -1,0 +1,6 @@
+2026/05/13-18:32:54.258 6a38 Reusing MANIFEST C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/05/13-18:32:54.259 6a38 Recovering log #220
+2026/05/13-18:32:54.260 6a38 Reusing old log C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000220.log 
+2026/05/13-18:32:54.315 595c Level-0 table #225: started
+2026/05/13-18:32:54.319 595c Level-0 table #225: 682560 bytes OK
+2026/05/13-18:32:54.320 595c Delete type=0 #220

@@ -14,7 +14,6 @@ class PlayWrightBot(QThread):
     sinalDownload = Signal(str)
     sinalTratativas = Signal(list)
     sinalPronto = Signal()
-    sinalTrativativaFinalizada = Signal()  # Novo sinal para quando a tratativa for finalizada
     sinalColunas = Signal(int)  # Novo sinal para enviar a quantidade de colunas
     sinalVideosCarregados = Signal()  # Novo sinal para quando todos os vídeos forem selecionados
     sinalLiberarVideo = Signal()
@@ -30,14 +29,16 @@ class PlayWrightBot(QThread):
 
     async def run_playwright(self):
         async with async_playwright() as pw:
-            navegador = await pw.chromium.launch_persistent_context(
+            self.navegador = await pw.chromium.launch_persistent_context(
                 user_data_dir="perfil_edge_bot",
                 channel="msedge", 
                 headless=False)
-            self.pagina = await navegador.new_page()
-
+            self.pagina = await self.navegador.new_page()
+            self.pagina2 = await self.navegador.new_page()
             #Login na conta
             await self.pagina.goto(self.url, wait_until="commit", timeout=0)
+
+            await self.pagina2.goto("https://web.whatsapp.com/", wait_until="commit", timeout=0)
             
             # Aguarda o campo de usuário estar visível
             try:
@@ -98,7 +99,7 @@ class PlayWrightBot(QThread):
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").click()
             #await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-header/div/div[2]/div/div[3]/p-checkbox/div/div[2]/span").click()
             tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button/img')
-            #await self.pagina.pause()
+            await self.pagina.pause()
 
             #Coletar informações do Alerta
             while await tratativa.is_enabled():
@@ -134,11 +135,11 @@ class PlayWrightBot(QThread):
                     download = await downloadVideo.value
 
                     diretorio = os.getcwd()
-                    diretorioFinal = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera.mp4")
+                    self.diretoriofinal = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera.mp4")
 
-                    await download.save_as(diretorioFinal)
+                    await download.save_as(self.diretoriofinal)
 
-                    self.sinalDownload.emit(diretorioFinal)
+                    self.sinalDownload.emit(self.diretoriofinal)
 
                 self.sinalInfo.emit(alerta,placa,empresa,filial,motorista)
                 
@@ -163,6 +164,7 @@ class PlayWrightBot(QThread):
                 
                 await self.pagina.get_by_role("button", name="Aplicar gestão").click()
                 await self.pagina.get_by_role("button", name="Aplicar gestão").click()
+                await self.pagina.pause()
 
                 self.sinalPronto.emit()
                 
@@ -174,7 +176,7 @@ class PlayWrightBot(QThread):
                 await asyncio.sleep(0.1)                      
  
             await self.pagina.wait_for_timeout(10000)
-            await navegador.close()
+            await self.navegador.close()
 
     #Rodando o navegador em segundo plano        
     def run(self):
@@ -308,18 +310,48 @@ class PlayWrightBot(QThread):
                 self.preencherTextoAusencia(tipo_ausencia), self.loop
             )
     async def alertaMonitorado(self):
-        #await self.pagina.locator("textarea").fill("Monitorado")
         await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
         await self.pagina.wait_for_timeout(300)
         await self.pagina.get_by_role("button", name="Concluir").click()
         await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
         await self.pagina.wait_for_timeout(300)
-        self.sinalTrativativaFinalizada.emit()  # Notifica que a tratativa foi finalizada
-        print(">>> Tratativa 'Monitorado' finalizada")
+        
+        print(">>> Tratativa Monitorada")
+
+    
+    async def reportarOperacao(self):
+        await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
+        await self.pagina.wait_for_timeout(300)
+        self.reportOperacao = await self.pagina.locator('div[style="width: 100%;"]').inner_text()
+
+        print(self.reportOperacao)
+
+        await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("Estágio")
+        await self.pagina2.wait_for_timeout(500)
+        await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Estágio").click()
+        await self.pagina2.wait_for_timeout(500)
+        await self.pagina2.get_by_role("button", name="Anexar").click()
+        await self.pagina2.wait_for_timeout(500)
+        await self.pagina2.click('button[aria-label="Fotos e vídeos"]')
+        await self.pagina2.wait_for_timeout(500)
+        await self.pagina2.locator('input[accept="image/*,video/mp4,video/3gpp,video/quicktime,video/webm,video/x-matroska"]').set_input_files(self.diretoriofinal)
+        await self.pagina2.get_by_test_id("media-caption-input-container").get_by_role("paragraph").fill(self.reportOperacao)
+        await self.pagina2.wait_for_timeout(500)
+        await self.pagina2.get_by_role("button", name="Enviar 1 item selecionado").click()
+        await self.pagina2.wait_for_timeout(3000)
+        
+        await self.pagina.get_by_role("button", name="Concluir").click()
+        await self.pagina.wait_for_timeout(300)
+        await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
+        await self.pagina.wait_for_timeout(300)
 
     def clickMonitorado(self):
         if self.loop:
             asyncio.run_coroutine_threadsafe(self.alertaMonitorado(), self.loop)
+
+    def clickReportarOperacao(self):
+        if self.loop:
+            asyncio.run_coroutine_threadsafe(self.reportarOperacao(), self.loop)
 
     async def invalidarAlerta(self):
         """Invalida o alerta atual voltando e selecionando 'Alerta invalidado'"""
@@ -379,7 +411,6 @@ class PlayWrightBot(QThread):
             
             
             # Emite sinal de tratativa finalizada para apagar o vídeo
-            self.sinalTrativativaFinalizada.emit()
             print(">>> Invalidação concluída com sucesso - Vídeo será apagado")
             
         except Exception as e:
@@ -394,6 +425,7 @@ class PlayWrightBot(QThread):
     def clickInvalidar(self):
         if self.loop:
             asyncio.run_coroutine_threadsafe(self.invalidarAlerta(), self.loop)
+
 
 
 
@@ -628,6 +660,7 @@ class janelaPrincipal (QMainWindow):
         self.reportado.clicked.connect(lambda: self.bot.clickMonitorado())
         self.reportado.setFixedHeight(30)
         self.operacao = QPushButton("Reportar para a Operação")
+        self.operacao.clicked.connect(lambda: self.bot.clickReportarOperacao())
         self.operacao.setFixedHeight(30)
         self.report.addWidget(self.reportado)
         self.report.addWidget(self.operacao)
@@ -695,7 +728,6 @@ class janelaPrincipal (QMainWindow):
         try:
             self.player.stop()
             self.player.setSource(QUrl())  # desvincula o arquivo
-            self.ocultarTodosBotoes()
             
             # Apaga o vídeo anterior se existir
             if self.video_atual and os.path.exists(self.video_atual):
