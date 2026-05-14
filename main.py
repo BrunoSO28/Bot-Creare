@@ -7,6 +7,7 @@ from playwright.async_api import async_playwright
 import sys
 import asyncio
 import os
+import pyautogui
 
 #BOT do navegador
 class PlayWrightBot(QThread):
@@ -99,27 +100,46 @@ class PlayWrightBot(QThread):
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").click()
             #await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-header/div/div[2]/div/div[3]/p-checkbox/div/div[2]/span").click()
             tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button/img')
-            await self.pagina.pause()
+            #await self.pagina.pause()
 
             #Coletar informações do Alerta
-            while await tratativa.is_enabled():
+            while not self.isInterruptionRequested():
+                
                 # Aguarda se estiver processando manualmente (invalidando, etc)
                 while self.processando_alerta:
                     await asyncio.sleep(0.5)
                     print(">>> Aguardando processamento manual...")
+
+                quantidade = await tratativa.count()
+                print(f">>> Quantidade de alertas: {quantidade}")
+                
+                if quantidade == 0:
+                    print(">>> Sem alertas, aguardando...")
+                    await asyncio.sleep(5)
+                    continue
+                
+                habilitado = await tratativa.is_enabled()
+                print(f">>> Alerta habilitado: {habilitado}")
+                
+                if not habilitado:
+                    await asyncio.sleep(2)
+                    continue
                 
                 self.processando_alerta = True  # Marca que está processando
                 
+                await self.pagina.wait_for_timeout(1000)
+
                 await tratativa.click()
-                alerta = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[1]/p-dropdown/div/label").inner_text()
-
-                placa = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[2]/p").inner_text()
-
-                filial = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[4]/p").inner_text()
-
-                empresa = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[3]").inner_text()
                 
-                motorista = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[5]/p").inner_text()
+                self.alerta = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[1]/p-dropdown/div/label").inner_text()
+
+                self.placa = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[2]/p").inner_text()
+
+                self.filial = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[4]/p").inner_text()
+
+                self.empresa = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[3]").inner_text()
+                
+                self.motorista = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[5]/p").inner_text()
                 
                 #Download do vídeo - usa .first para pegar o primeiro elemento quando há múltiplos
                 await self.pagina.locator(".playMovie").first.dblclick()
@@ -141,7 +161,7 @@ class PlayWrightBot(QThread):
 
                     self.sinalDownload.emit(self.diretoriofinal)
 
-                self.sinalInfo.emit(alerta,placa,empresa,filial,motorista)
+                self.sinalInfo.emit(self.alerta,self.placa,self.empresa,self.filial,self.motorista)
                 
                 await self.pagina.mouse.click(400, 10)
 
@@ -164,7 +184,7 @@ class PlayWrightBot(QThread):
                 
                 await self.pagina.get_by_role("button", name="Aplicar gestão").click()
                 await self.pagina.get_by_role("button", name="Aplicar gestão").click()
-                await self.pagina.pause()
+                #await self.pagina.pause()
 
                 self.sinalPronto.emit()
                 
@@ -313,12 +333,35 @@ class PlayWrightBot(QThread):
         await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
         await self.pagina.wait_for_timeout(300)
         await self.pagina.get_by_role("button", name="Concluir").click()
+        print(">>> Aguardando tabela atualizar...")
+        await self.pagina.wait_for_timeout(3000)
         await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
-        await self.pagina.wait_for_timeout(300)
         
         print(">>> Tratativa Monitorada")
 
     
+    async def subirVideoZap(self):
+        await self.pagina2.get_by_role("button", name="Anexar").click()
+        await self.pagina2.wait_for_timeout(500)
+        await self.pagina2.click('button[aria-label="Fotos e vídeos"]')
+        await self.pagina2.wait_for_timeout(500)
+        await self.pagina2.locator('input[accept="image/*,video/mp4,video/3gpp,video/quicktime,video/webm,video/x-matroska"]').set_input_files(self.diretoriofinal)
+        
+        # Fecha o seletor de arquivos do Windows com pyautogui
+        await self.pagina2.wait_for_timeout(500)
+        pyautogui.hotkey('alt', 'F4')  # fecha a janela nativa
+        await self.pagina2.wait_for_timeout(500)
+        
+        await self.pagina2.get_by_test_id("media-caption-input-container").get_by_role("paragraph").fill(self.reportOperacao)
+        await self.pagina2.wait_for_timeout(500)
+        await self.pagina2.get_by_role("button", name="Enviar 1 item selecionado").click()
+        await self.pagina2.wait_for_timeout(1000)
+        await self.pagina2.get_by_role("button", name="End icon button").click()
+        await self.pagina2.wait_for_timeout(500)
+        await self.pagina2.get_by_text("Alerta de Fadiga - África").click()
+        await self.pagina2.wait_for_timeout(100)
+
+        
     async def reportarOperacao(self):
         await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
         await self.pagina.wait_for_timeout(300)
@@ -326,31 +369,69 @@ class PlayWrightBot(QThread):
 
         print(self.reportOperacao)
 
-        await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("Estágio")
-        await self.pagina2.wait_for_timeout(500)
-        await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Estágio").click()
-        await self.pagina2.wait_for_timeout(500)
-        await self.pagina2.get_by_role("button", name="Anexar").click()
-        await self.pagina2.wait_for_timeout(500)
-        await self.pagina2.click('button[aria-label="Fotos e vídeos"]')
-        await self.pagina2.wait_for_timeout(500)
-        await self.pagina2.locator('input[accept="image/*,video/mp4,video/3gpp,video/quicktime,video/webm,video/x-matroska"]').set_input_files(self.diretoriofinal)
-        await self.pagina2.get_by_test_id("media-caption-input-container").get_by_role("paragraph").fill(self.reportOperacao)
-        await self.pagina2.wait_for_timeout(500)
-        await self.pagina2.get_by_role("button", name="Enviar 1 item selecionado").click()
-        await self.pagina2.wait_for_timeout(3000)
-        
+        match self.filial: 
+            case "Distribuição":
+                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - distribuição")
+                await self.pagina2.wait_for_timeout(500)
+                await self.pagina2.get_by_text("Alerta de Fadiga - Distribui").click()
+                await self.pagina2.wait_for_timeout(500)
+                await self.subirVideoZap()
+            case "Costa Rica" | "Costa Rica Leves":
+                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - costa rica")
+                await self.pagina2.wait_for_timeout(500)
+                await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Cost").click()
+                await self.pagina2.wait_for_timeout(500)
+                await self.subirVideoZap()
+            case "Alto Taquari":
+                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - alto taquari")
+                await self.pagina2.wait_for_timeout(500)
+                await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Alto").click()
+                await self.pagina2.wait_for_timeout(500)
+                await self.subirVideoZap()
+            case "Cenibra NE" | "Cenibra BO" | "Cenibra SB Agregados":
+                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cenibra")
+                await self.pagina2.wait_for_timeout(500)
+                await self.pagina2.get_by_text("Alerta de Fadiga - Cenibra").click()
+                await self.pagina2.wait_for_timeout(500)
+                await self.subirVideoZap()
+            case "Catalão":
+                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cmoc")
+                await self.pagina2.wait_for_timeout(500)
+                await self.pagina2.get_by_text("Alerta de Fadiga - CMOC").click()
+                await self.pagina2.wait_for_timeout(500)
+                await self.subirVideoZap()
+            case "Químico 1 Felipe" | "Automotivo Fabiano" | "Automotivo Felipe" | "Automotivo Alvaro" | "Químico 2 Fabiano":
+                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - rodoviario")
+                await self.pagina2.wait_for_timeout(500)
+                await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Rodoviário").click()
+                await self.pagina2.wait_for_timeout(500)
+                await self.subirVideoZap()
+            case "Transporte de Madeira - Expresso/RS":
+                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cmpc")
+                await self.pagina2.wait_for_timeout(500)
+                await self.pagina2.get_by_text("Alerta de Fadiga - CMPC").click()
+                await self.pagina2.wait_for_timeout(500)
+                await self.subirVideoZap()
+            case "GRID 1" | "GRID 2" | "GRID 3":
+                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - bracell")
+                await self.pagina2.wait_for_timeout(500)
+                await self.pagina2.get_by_text("Alerta de Fadiga - Bracell").click()
+                await self.pagina2.wait_for_timeout(500)
+                await self.subirVideoZap()
+            
         await self.pagina.get_by_role("button", name="Concluir").click()
-        await self.pagina.wait_for_timeout(300)
+        print(">>> Aguardando tabela atualizar...")
+        await self.pagina.wait_for_timeout(3000)
         await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
-        await self.pagina.wait_for_timeout(300)
 
     def clickMonitorado(self):
         if self.loop:
+            self.processando_alerta = True
             asyncio.run_coroutine_threadsafe(self.alertaMonitorado(), self.loop)
 
     def clickReportarOperacao(self):
         if self.loop:
+            self.processando_alerta = True
             asyncio.run_coroutine_threadsafe(self.reportarOperacao(), self.loop)
 
     async def invalidarAlerta(self):
@@ -404,11 +485,12 @@ class PlayWrightBot(QThread):
             await self.pagina.wait_for_timeout(300)
 
             await self.pagina.get_by_role("button", name="Ok").click()
-            await self.pagina.wait_for_timeout(300)
-
-            await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
-            await self.pagina.wait_for_timeout(300)
             
+
+            print(">>> Aguardando tabela atualizar...")
+            await self.pagina.wait_for_timeout(3000)
+
+            await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()            
             
             # Emite sinal de tratativa finalizada para apagar o vídeo
             print(">>> Invalidação concluída com sucesso - Vídeo será apagado")
@@ -424,10 +506,8 @@ class PlayWrightBot(QThread):
 
     def clickInvalidar(self):
         if self.loop:
+            self.processando_alerta = True
             asyncio.run_coroutine_threadsafe(self.invalidarAlerta(), self.loop)
-
-
-
 
 class janelaPrincipal (QMainWindow):
     def __init__(self):
