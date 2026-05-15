@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTextEdit, QLineEdit, QComboBox
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTextEdit, QLineEdit, QComboBox, QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView
 from PySide6.QtMultimedia import QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtCore import QUrl, Qt, QThread, Signal, QRect
@@ -18,6 +18,7 @@ class PlayWrightBot(QThread):
     sinalColunas = Signal(int)  # Novo sinal para enviar a quantidade de colunas
     sinalVideosCarregados = Signal()  # Novo sinal para quando todos os vídeos forem selecionados
     sinalLiberarVideo = Signal()
+    sinalTabela = Signal(int, list)
 
     def __init__(self, url):
         super().__init__()
@@ -100,7 +101,7 @@ class PlayWrightBot(QThread):
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").click()
             #await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-header/div/div[2]/div/div[3]/p-checkbox/div/div[2]/span").click()
             tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button/img')
-            #await self.pagina.pause()
+            await self.pagina.pause()
 
             #Coletar informações do Alerta
             while not self.isInterruptionRequested():
@@ -181,7 +182,22 @@ class PlayWrightBot(QThread):
                 self.colunas = await self.pagina.locator('table:has(th:text("Tipo Alerta")) tbody tr').count()
                 print(f">>> Quantidade de colunas: {self.colunas}")
                 self.sinalColunas.emit(self.colunas)  # Emite o sinal com a quantidade de colunas
-                
+
+                self.tabelaHistorico = self.pagina.locator('table.alarm-history tbody tr.ng-star-inserted')
+                self.total = await self.tabelaHistorico.count()
+                print(f'>>> Total: {self.total}')
+
+                dados_tabela = []
+                for i in range(self.total):
+                    self.linha = self.tabelaHistorico.nth(i)
+                    self.col1 = await self.linha.locator("td:nth-child(1) span").inner_text()
+                    self.col2 = await self.linha.locator("td:nth-child(2)").inner_text()
+                    self.col3 = await self.linha.locator("td:nth-child(3)").inner_text()
+                    dados_tabela.append((self.col1, self.col2, self.col3))
+                    print(f'col1: {self.col1} - col2: {self.col2} - col3: {self.col3}')
+
+                self.sinalTabela.emit(self.total, dados_tabela)
+
                 await self.pagina.get_by_role("button", name="Aplicar gestão").click()
                 await self.pagina.get_by_role("button", name="Aplicar gestão").click()
                 #await self.pagina.pause()
@@ -509,80 +525,100 @@ class PlayWrightBot(QThread):
             self.processando_alerta = True
             asyncio.run_coroutine_threadsafe(self.invalidarAlerta(), self.loop)
 
-class janelaPrincipal (QMainWindow):
+class janelaPrincipal(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Revisão de Vídeo")
-        
-        # Ajusta a janela considerando o DPI scaling do Windows
-        self.ajustarJanelaAoMonitor(85)
-        
+        self.video_atual = None
+
+        # Janela mais alta e menos larga: 70% largura, 90% altura
+        self.ajustarJanelaAoMonitor(largura_pct=70, altura_pct=90)
+
         self.iniciarThread()
 
-        #Layout do App
+        # ── Widget central ──────────────────────────────────────────────────
         central = QWidget()
         self.setCentralWidget(central)
 
-        self.layoutHorizontal = QHBoxLayout(central)
-        self.layoutHorizontal.setContentsMargins(20,20,20,20)
-        self.layoutHorizontal.setSpacing(20)
-        
-        self.esquerdo = QWidget()
-        self.layoutEsquerdo = QVBoxLayout(self.esquerdo)
+        raiz = QHBoxLayout(central)
+        raiz.setContentsMargins(12, 12, 12, 12)
+        raiz.setSpacing(12)
 
-        container = QWidget()
-        # Remove tamanho fixo para ser responsivo
-        container.setMinimumSize(500, 400)
-        container.setObjectName("container")
-        container.setStyleSheet("#container { border-bottom: 1px solid #a6a6a6; } ")
-        
-        layoutContainer = QVBoxLayout(container)
-        layoutContainer.setContentsMargins(10, 10, 10, 10)
-        layoutContainer.setSpacing(6)
-        
-        self.layoutEsquerdo.addWidget(container, alignment=Qt.AlignTop | Qt.AlignLeft)     
-        
+        # ── COLUNA ESQUERDA  (espaço para tabela futura) ────────────────────
+        self.painelTabela = QWidget()
+        self.painelTabela.setObjectName("painelTabela")
+        self.painelTabela.setStyleSheet(
+            "#painelTabela { border: 1px dashed #444; border-radius: 6px; }"
+        )
+        self.painelTabela.setMinimumWidth(260)
+        self.painelTabela.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        labelTabela = QLabel("Histórico de Alertas", self.painelTabela)
+        labelTabela.setAlignment(Qt.AlignCenter)
+        labelTabela.setStyleSheet("font-size: 13px;")
+
+        self.tabela = QTableWidget(0, 3)
+        self.tabela.setHorizontalHeaderLabels(["Tipo Alerta", "Quando", "Tratativa"])
+        # Cabeçalho estica para preencher o espaço
+        self.tabela.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+
+        # Não permite edição pelo usuário
+        self.tabela.setEditTriggers(QTableWidget.NoEditTriggers)
+
+        # Seleciona a linha inteira ao clicar
+        self.tabela.setSelectionBehavior(QTableWidget.SelectRows)
+
+        self.layoutTabela = QVBoxLayout(self.painelTabela)
+        self.layoutTabela.addWidget(labelTabela)
+        self.layoutTabela.addWidget(self.tabela)
+
+        raiz.addWidget(self.painelTabela, stretch=3)
+
+        # ── COLUNA CENTRAL  (vídeo + controles + ações) ─────────────────────
+        colCentro = QWidget()
+        layoutCentro = QVBoxLayout(colCentro)
+        layoutCentro.setContentsMargins(0, 0, 0, 0)
+        layoutCentro.setSpacing(8)
+        layoutCentro.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+
+        # Status
         self.status_label = QLabel("Carregando Vídeo...")
-        self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.status_label.setFont(QFont("Arial", 12, QFont.Bold))
-        layoutContainer.addWidget(self.status_label)
+        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setFont(QFont("Arial", 11, QFont.Bold))
+        layoutCentro.addWidget(self.status_label)
 
-        # Local onde o vídeo vai aparecer
+        # Vídeo – maior e proporcional
         self.caixaVideo = QVideoWidget()
-        layoutContainer.addWidget(self.caixaVideo, stretch=1)
+        self.caixaVideo.setMinimumSize(520, 400)
+        self.caixaVideo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        layoutCentro.addWidget(self.caixaVideo, stretch=1)
+
         self.player = QMediaPlayer(self)
         self.player.setVideoOutput(self.caixaVideo)
-        
-        # Configura o vídeo para repetir em loop
         self.player.setLoops(QMediaPlayer.Loops.Infinite)
 
-        # Label para mostrar a quantidade de alertas já monitorados
+        # Contador de visualizações
         self.labelColunas = QLabel()
-        self.labelColunas.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.labelColunas.setAlignment(Qt.AlignCenter)
         self.labelColunas.setFont(QFont("Arial", 10, QFont.Bold))
-        self.labelColunas.setStyleSheet("color: #0066cc; padding: 5px;")
-        layoutContainer.addWidget(self.labelColunas)
-        
-        # Armazena o caminho do vídeo atual para poder apagá-lo depois
-        self.video_atual = None
-        
+        self.labelColunas.setStyleSheet("color: #0088ff; padding: 2px;")
+        layoutCentro.addWidget(self.labelColunas)
 
-        #Controles 
+        # Controles de reprodução
         controles = QHBoxLayout()
-        controles.setSpacing(6)  # espaço menor entre botões
+        controles.setSpacing(6)
+        controles.setAlignment(Qt.AlignHCenter)
 
-        btnPlay = QPushButton("▶️")
+        fonte_p = QFont("Arial", 9)
+        btnPlay  = QPushButton("▶️")
         btnPause = QPushButton("⏸️")
         btnNormalSpeed = QPushButton("1X")
         btnSpeed = QPushButton("2X")
 
-        fonte_pequena = QFont("Arial", 9)
-
         for btn in [btnPlay, btnPause, btnNormalSpeed, btnSpeed]:
-            btn.setFont(fonte_pequena)
-            btn.setFixedHeight(30)          
-            btn.setFixedWidth(30)           
-
+            btn.setFont(fonte_p)
+            btn.setFixedSize(34, 30)
+        
         btnNormalSpeed.clicked.connect(lambda: self.player.setPlaybackRate(1.0))
         btnSpeed.clicked.connect(lambda: self.player.setPlaybackRate(2.0))
         btnPlay.clicked.connect(self.player.play)
@@ -592,224 +628,241 @@ class janelaPrincipal (QMainWindow):
         controles.addWidget(btnPause)
         controles.addWidget(btnNormalSpeed)
         controles.addWidget(btnSpeed)
-        controles.addStretch()  # empurra os botões para a esquerda
-        layoutContainer.addLayout(controles)
-        
-        #Ações
+        layoutCentro.addLayout(controles)
+
+        # Botões Válido / Inválido
         acoes = QHBoxLayout()
-        acoes.setSpacing(10)
+        acoes.setSpacing(16)
+        acoes.setAlignment(Qt.AlignHCenter)
 
         self.btnValido = QPushButton("Válido")
         self.btnValido.clicked.connect(self.abrirTratativa)
-        self.btnValido.setStyleSheet("background-color: green;")
+        self.btnValido.setStyleSheet("background-color: #2a7d2a; color: white; font-weight: bold;")
 
         self.btnInvalido = QPushButton("Inválido")
         self.btnInvalido.clicked.connect(self.clickInvalidar)
-        self.btnInvalido.setStyleSheet("background-color:#990000;")
-        
+        self.btnInvalido.setStyleSheet("background-color: #990000; color: white; font-weight: bold;")
+
         for btn in [self.btnValido, self.btnInvalido]:
-            btn.setFont(fonte_pequena)
-            btn.setFixedHeight(38)         
-            btn.setFixedWidth(120)
+            btn.setFont(fonte_p)
+            btn.setFixedSize(130, 40)
 
         acoes.addWidget(self.btnValido)
         acoes.addWidget(self.btnInvalido)
-        layoutContainer.addLayout(acoes)
+        layoutCentro.addLayout(acoes)
 
-        #Informações na UI
-        self.direito = QWidget()
-        self.layoutDireito = QVBoxLayout(self.direito)
-        
-        container2 = QWidget()
-        # Remove tamanho fixo para ser responsivo
-        container2.setMinimumSize(500, 400)
-        container2.setObjectName("container2")
-        container2.setStyleSheet("#container2 { border-left: 1px solid #a6a6a6; } ")
-        
-        layoutContainer2 = QVBoxLayout(container2)
-        layoutContainer2.setContentsMargins(10, 10, 10, 10)
-        layoutContainer2.setSpacing(6)
-        
-        self.layoutDireito.addWidget(container2, alignment=Qt.AlignTop | Qt.AlignRight)
+        raiz.addWidget(colCentro, stretch=4)
 
+        # ── COLUNA DIREITA  (informações + tratativa + report) ───────────────
+        colDireita = QWidget()
+        colDireita.setObjectName("colDireita")
+        colDireita.setStyleSheet(
+            "#colDireita { border-left: 1px solid #444; }"
+        )
+        colDireita.setMinimumWidth(300)
+        colDireita.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        layoutDireita = QVBoxLayout(colDireita)
+        layoutDireita.setContentsMargins(14, 10, 10, 10)
+        layoutDireita.setSpacing(10)
+        layoutDireita.setAlignment(Qt.AlignTop)
+
+        fonte_info = QFont("Arial", 11, QFont.Bold)
+
+        # Informações do alerta
         self.infoAlerta = QLabel()
-        self.infoAlerta.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.infoAlerta.setFont(QFont("Arial", 12, QFont.Bold))
+        self.infoAlerta.setAlignment(Qt.AlignCenter)
+        self.infoAlerta.setFont(fonte_info)
         self.infoAlerta.setObjectName("infoAlerta")
-        self.infoAlerta.setStyleSheet("#infoAlerta {border-bottom: 1px solid #a6a6a6; padding: 10px;}")
-        self.infoAlerta.setWordWrap(True)  # Permite quebra de linha
-        layoutContainer2.addWidget(self.infoAlerta)
-        
+        self.infoAlerta.setStyleSheet(
+            "#infoAlerta { border-bottom: 1px solid #444; padding-bottom: 8px; }"
+        )
+        self.infoAlerta.setWordWrap(True)
+        layoutDireita.addWidget(self.infoAlerta)
+
         self.infoPlaca = QLabel()
-        self.infoPlaca.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.infoPlaca.setFont(QFont("Arial", 12, QFont.Bold))
+        self.infoPlaca.setAlignment(Qt.AlignCenter)
+        self.infoPlaca.setFont(fonte_info)
         self.infoPlaca.setWordWrap(True)
-        layoutContainer2.addWidget(self.infoPlaca)
-        
-        self.infoFilial = QLabel()
-        self.infoFilial.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.infoFilial.setFont(QFont("Arial", 12, QFont.Bold))
-        self.infoFilial.setWordWrap(True)
-        layoutContainer2.addWidget(self.infoFilial)
-        
+        layoutDireita.addWidget(self.infoPlaca)
+
         self.infoEmpresa = QLabel()
-        self.infoEmpresa.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.infoEmpresa.setFont(QFont("Arial", 12, QFont.Bold))
+        self.infoEmpresa.setAlignment(Qt.AlignCenter)
+        self.infoEmpresa.setFont(fonte_info)
         self.infoEmpresa.setWordWrap(True)
-        layoutContainer2.addWidget(self.infoEmpresa)
-        
+        layoutDireita.addWidget(self.infoEmpresa)
+
+        self.infoFilial = QLabel()
+        self.infoFilial.setAlignment(Qt.AlignCenter)
+        self.infoFilial.setFont(fonte_info)
+        self.infoFilial.setWordWrap(True)
+        layoutDireita.addWidget(self.infoFilial)
+
         self.infoMotorista = QLabel()
-        self.infoMotorista.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.infoMotorista.setFont(QFont("Arial", 12, QFont.Bold))
+        self.infoMotorista.setAlignment(Qt.AlignCenter)
+        self.infoMotorista.setFont(fonte_info)
         self.infoMotorista.setWordWrap(True)
-        layoutContainer2.addWidget(self.infoMotorista)
+        layoutDireita.addWidget(self.infoMotorista)
 
-        self.layoutHorizontal.addWidget(self.esquerdo)
-        self.layoutHorizontal.addWidget(self.direito)
+        # Separador visual
+        separador = QLabel()
+        separador.setFixedHeight(1)
+        separador.setStyleSheet("background: #444; margin: 6px 0;")
+        layoutDireita.addWidget(separador)
 
+        # ── Seção de Tratativa (oculta até clicar Válido) ──
         self.containerT = QWidget()
-        self.containerT.setMinimumSize(500, 300)
-        self.containerT.setObjectName("containerT")
-        self.containerT.hide()  # ← oculto até clicar em Válido
-        
-        layoutTratativa = QVBoxLayout(self.containerT)
-        layoutTratativa.setContentsMargins(10, 10, 10, 10)
-        layoutTratativa.setSpacing(2)
-        layoutTratativa.setAlignment(Qt.AlignTop)
-        
-        self.tratativas = QComboBox(self)
-        self.tratativas.setFixedWidth(400)
-        self.tratativas.setPlaceholderText("Selecione sua tratativa")
-        self.tratativas.currentTextChanged.connect(self.sincronizarSelecao)        
-        
-        layoutTratativa.addWidget(self.tratativas)
-        layoutTratativa.addStretch()
+        self.containerT.hide()
+        layoutT = QVBoxLayout(self.containerT)
+        layoutT.setContentsMargins(0, 0, 0, 0)
+        layoutT.setSpacing(8)
 
+        self.tratativas = QComboBox(self)
+        self.tratativas.setPlaceholderText("Selecione sua tratativa")
+        self.tratativas.currentTextChanged.connect(self.sincronizarSelecao)
+        layoutT.addWidget(self.tratativas)
+
+        # Botões de conduta
         self.escolhaConduta = QHBoxLayout()
-        self.escolhaConduta.setAlignment(Qt.AlignLeft)
+        self.escolhaConduta.setSpacing(6)
+
         self.cigarro = QPushButton("Cigarro")
         self.cigarro.clicked.connect(lambda: self.bot.clickConduta("Cigarro"))
         self.cigarro.hide()
-        self.cigarro.setFixedWidth(150)
+
         self.celular = QPushButton("Celular")
         self.celular.clicked.connect(lambda: self.bot.clickConduta("Celular"))
-        self.celular.setFixedWidth(150)
         self.celular.hide()
+
         self.cameraManipulada = QPushButton("Câmera Manipulada")
         self.cameraManipulada.clicked.connect(lambda: self.bot.clickConduta("Câmera Manipulada"))
-        self.cameraManipulada.setFixedWidth(150)
         self.cameraManipulada.hide()
+
         self.escolhaConduta.addWidget(self.cigarro)
         self.escolhaConduta.addWidget(self.celular)
         self.escolhaConduta.addWidget(self.cameraManipulada)
+        layoutT.addLayout(self.escolhaConduta)
 
-        layoutTratativa.addLayout(self.escolhaConduta)
-
+        # Botões de ausência
         self.escolhaAusencia = QHBoxLayout()
-        self.escolhaAusencia.setAlignment(Qt.AlignLeft)
+        self.escolhaAusencia.setSpacing(6)
+
         self.cameraDesajustada = QPushButton("Câmera Desajustada")
         self.cameraDesajustada.clicked.connect(lambda: self.bot.clickAusencia("Câmera Desajustada"))
         self.cameraDesajustada.hide()
-        self.cameraDesajustada.setFixedWidth(200)
+
         self.cameraEscura = QPushButton("Câmera Escura")
         self.cameraEscura.clicked.connect(lambda: self.bot.clickAusencia("Câmera Escura"))
         self.cameraEscura.hide()
-        self.cameraEscura.setFixedWidth(200)
+
         self.cameraDefeito = QPushButton("Câmera com Defeito")
         self.cameraDefeito.clicked.connect(lambda: self.bot.clickAusencia("Câmera com Defeito"))
         self.cameraDefeito.hide()
-        self.cameraDefeito.setFixedWidth(200)
+
         self.escolhaAusencia.addWidget(self.cameraDesajustada)
         self.escolhaAusencia.addWidget(self.cameraEscura)
         self.escolhaAusencia.addWidget(self.cameraDefeito)
+        layoutT.addLayout(self.escolhaAusencia)
 
-        layoutTratativa.addLayout(self.escolhaAusencia)
-        layoutTratativa.addStretch() 
+        layoutDireita.addWidget(self.containerT)
 
-        self.layoutEsquerdo.addWidget(self.containerT)
-
+        # ── Seção de Report (oculta até clicar Válido) ──
         self.containerR = QWidget()
-        self.containerR.setMinimumSize(500, 300)
-        self.containerR.setObjectName("containerR")
         self.containerR.hide()
+        layoutR = QHBoxLayout(self.containerR)
+        layoutR.setContentsMargins(0, 0, 0, 0)
+        layoutR.setSpacing(8)
 
-        layoutReport = QVBoxLayout(self.containerR)
-
-        self.report = QHBoxLayout()
         self.reportado = QPushButton("Monitorado")
         self.reportado.clicked.connect(lambda: self.bot.clickMonitorado())
-        self.reportado.setFixedHeight(30)
+        self.reportado.setFixedHeight(32)
+
         self.operacao = QPushButton("Reportar para a Operação")
         self.operacao.clicked.connect(lambda: self.bot.clickReportarOperacao())
-        self.operacao.setFixedHeight(30)
-        self.report.addWidget(self.reportado)
-        self.report.addWidget(self.operacao)
-        
-        layoutReport.addLayout(self.report)
+        self.operacao.setFixedHeight(32)
 
-        self.layoutDireito.addWidget(self.containerR)
+        layoutR.addWidget(self.reportado)
+        layoutR.addWidget(self.operacao)
+        layoutDireita.addWidget(self.containerR)
 
+        # Empurra tudo para cima
+        layoutDireita.addStretch()
 
-    #Iniciar a thread para abrir o site
+        raiz.addWidget(colDireita, stretch=3)
+
+    # ── Métodos de controle ──────────────────────────────────────────────────
+
     def iniciarThread(self):
         self.bot = PlayWrightBot("https://login.goawakecloud.com.br/pt-br/goawake?cc=true")
         self.bot.sinalInfo.connect(self.coletarInfo)
         self.bot.sinalDownload.connect(self.downloadConcluido)
         self.bot.sinalTratativas.connect(self.listarTratativas)
-        self.bot.sinalColunas.connect(self.atualizarColunas)  # Conecta o sinal para atualizar a contagem
-        self.bot.sinalVideosCarregados.connect(self.habilitarBotaoInvalidar)  # Conecta o sinal para habilitar botão Inválido
+        self.bot.sinalColunas.connect(self.atualizarColunas)
+        self.bot.sinalVideosCarregados.connect(self.habilitarBotaoInvalidar)
         self.bot.sinalLiberarVideo.connect(self.liberarVideoAtual)
+        self.bot.sinalTabela.connect(self.atualizarTabela)
         self.bot.start()
 
-
-    #Coletar as informações do site
-    def coletarInfo(self, alerta, placa,filial, empresa, motorista):
+    def coletarInfo(self, alerta, placa, filial, empresa, motorista):
         self.infoAlerta.setText(alerta)
         self.infoPlaca.setText(placa)
         self.infoFilial.setText(filial)
         self.infoEmpresa.setText(empresa)
         self.infoMotorista.setText(motorista)
-        
-        # Desabilita ambos os botões inicialmente
-        # Serão habilitados apenas após todos os vídeos serem carregados
+
         self.btnValido.setEnabled(False)
         self.btnInvalido.setEnabled(False)
         print(">>> Botões desabilitados, aguardando carregamento dos vídeos...")
-        # Habilita os botões para o novo alerta
         self.habilitarBotoesAcao()
-        
-        # Reseta a flag de tratativa aberta
+
         if hasattr(self, '_tratativaAberta'):
             delattr(self, '_tratativaAberta')
-        
+
+        # Oculta seções de tratativa/report ao carregar novo alerta
+        self.containerT.hide()
+        self.containerR.hide()
+
         self.pedirTratativas()
-    
+
     def habilitarBotaoInvalidar(self):
-        """Habilita ambos os botões após todos os vídeos serem carregados"""
         self.btnValido.setEnabled(True)
         self.btnInvalido.setEnabled(True)
-        print(">>> Botões Válido e Inválido habilitados - Todos os vídeos foram carregados")
+        print(">>> Botões Válido e Inválido habilitados")
 
-    #Atualiza o label com a quantidade de alertas já monitorados
     def atualizarColunas(self, quantidade):
-        """Atualiza o label com a quantidade de alertas já monitorados"""
-        self.labelColunas.setText(f"Alerta já foi visto {quantidade} vezes ")
+        self.labelColunas.setText(f"Alerta já foi visto {quantidade} vezes")
         print(f">>> Label atualizado: {quantidade} alertas monitorados")
 
-    #Inicia o vídeo assim que ele é baixado
+    def atualizarTabela(self, linhas, dados):
+        print(f'>>> dados: {dados}')
+        if linhas == 0:
+            self.tabela.hide()
+            self.noHistoricoLabel = QLabel("Nenhum alerta anterior encontrado")
+            self.noHistoricoLabel.setAlignment(Qt.AlignCenter)
+            self.layoutTabela.addWidget(self.noHistoricoLabel)
+            self.layoutTabela.addStretch()
+        else:
+            if hasattr(self, 'noHistoricoLabel'):
+                self.noHistoricoLabel.hide()
+                del self.noHistoricoLabel
+                self.tabela.show()
+
+            self.tabela.setRowCount(linhas)
+            for i, (tipo, quando, tratativa) in enumerate(dados):
+                self.tabela.setItem(i, 0, QTableWidgetItem(tipo))
+                self.tabela.setItem(i, 1, QTableWidgetItem(quando))
+                self.tabela.setItem(i, 2, QTableWidgetItem(tratativa))
+            print(f">>> Tabela atualizada com {linhas} linhas")
+
     def downloadConcluido(self, diretorioFinal):
-        # Armazena o caminho do vídeo atual
         self.video_atual = diretorioFinal
         self.player.setSource(QUrl.fromLocalFile(diretorioFinal))
         self.player.play()
 
     def liberarVideoAtual(self):
-        """Para o player e libera o arquivo de vídeo antes do próximo download"""
         try:
             self.player.stop()
-            self.player.setSource(QUrl())  # desvincula o arquivo
-            
-            # Apaga o vídeo anterior se existir
+            self.player.setSource(QUrl())
             if self.video_atual and os.path.exists(self.video_atual):
                 import time
                 for tentativa in range(5):
@@ -821,108 +874,74 @@ class janelaPrincipal (QMainWindow):
                         print(f">>> Tentativa {tentativa + 1}/5 falhou, aguardando...")
                         time.sleep(0.3)
                 self.video_atual = None
-
         except Exception as e:
             print(f">>> ERRO ao liberar vídeo: {e}")
         finally:
-            # Sempre sinaliza para o bot que pode prosseguir
-            asyncio.run_coroutine_threadsafe(
-                self._marcarVideoLiberado(), self.bot.loop
-            )
+            asyncio.run_coroutine_threadsafe(self._marcarVideoLiberado(), self.bot.loop)
 
-    async def _marcarVideoLiberado(self):  # método auxiliar
+    async def _marcarVideoLiberado(self):
         self.bot._video_liberado.set()
 
-    #Tratativas do alerta quando o botão de válidar é apertado
     def abrirTratativa(self):
         if hasattr(self, '_tratativaAberta'):
             return
         self._tratativaAberta = True
-        
-        # Desabilita os botões após clicar
         self.desabilitarBotoesAcao()
-        
         self.containerT.show()
         self.containerR.show()
-    
+
     def clickInvalidar(self):
-        """Método chamado quando o botão Inválido é clicado"""
-        # Desabilita os botões imediatamente
         self.desabilitarBotoesAcao()
-        
-        # Chama o método do bot
         if self.bot:
             self.bot.clickInvalidar()
-    
+
     def desabilitarBotoesAcao(self):
-        """Desabilita os botões Válido e Inválido"""
         self.btnValido.setEnabled(False)
         self.btnInvalido.setEnabled(False)
-        print(">>> Botões de ação desabilitados")
-    
+
     def habilitarBotoesAcao(self):
-        """Habilita os botões Válido e Inválido"""
         self.btnValido.setEnabled(True)
         self.btnInvalido.setEnabled(True)
-        print(">>> Botões de ação habilitados")  
 
     def sincronizarSelecao(self, valor: str):
         print(">>> sincronizarSelecao chamado:", valor)
-        
-        # Primeiro oculta todos os botões
         self.ocultarTodosBotoes()
-        
-        # Depois mostra os botões apropriados baseado na seleção
         if valor == "Conduta - Política de Consequência + Pontos no D-OLHO":
             self.mostrarConduta()
         elif valor == "Ausência - Solicitar ajuste - Gestão de Equipamentos CCI":
             self.mostrarAusencia()
-        
-        # Sincroniza com o bot
         if self.bot:
             self.bot.clickSelecao(valor, janela_callback=self)
-        
+
     def listarTratativas(self, opcoes: list):
         if self.tratativas is None:
-            self._tratativas_pendentes = opcoes  # guarda para usar depois
+            self._tratativas_pendentes = opcoes
             return
-        
         self.tratativas.blockSignals(True)
         self.tratativas.clear()
         self.tratativas.addItems(opcoes)
-        self.tratativas.blockSignals(False) # ← confirme que essa linha executa
-        print(">>> sinais bloqueados?", self.tratativas.signalsBlocked())
-        print(">>> combo tem itens:", self.tratativas.count())
+        self.tratativas.blockSignals(False)
 
     def pedirTratativas(self):
-        asyncio.run_coroutine_threadsafe(
-        self.bot.coletarTratativas(), self.bot.loop
-    )
+        asyncio.run_coroutine_threadsafe(self.bot.coletarTratativas(), self.bot.loop)
 
     def mostrarConduta(self):
-        # Oculta botões de ausência primeiro
         self.cameraDesajustada.hide()
         self.cameraEscura.hide()
         self.cameraDefeito.hide()
-        # Mostra botões de conduta
         self.celular.show()
         self.cigarro.show()
         self.cameraManipulada.show()
-        print(">>> Botões de conduta exibidos")
 
     def mostrarAusencia(self):
-        # Oculta botões de conduta primeiro
         self.celular.hide()
         self.cigarro.hide()
         self.cameraManipulada.hide()
-        # Mostra botões de ausência
         self.cameraDesajustada.show()
         self.cameraEscura.show()
         self.cameraDefeito.show()
-        print(">>> Botões de ausência exibidos")
-    
+
     def ocultarTodosBotoes(self):
-        # Oculta todos os botões de escolha
         self.celular.hide()
         self.cigarro.hide()
         self.cameraManipulada.hide()
@@ -930,71 +949,27 @@ class janelaPrincipal (QMainWindow):
         self.cameraEscura.hide()
         self.cameraDefeito.hide()
 
-    def ajustarJanelaAoMonitor(self, percentual=80):
-        """
-        Ajusta o tamanho da janela baseado no tamanho do monitor.
-        Considera o DPI scaling do Windows (125%, 150%, etc.)
-        
-        Args:
-            percentual (int): Percentual do tamanho da tela a ser usado (padrão: 80%)
-        """
-        # Obtém a tela onde a janela está localizada
+    def ajustarJanelaAoMonitor(self, largura_pct=70, altura_pct=90):
+        """Ajusta o tamanho da janela como percentual da tela disponível."""
         tela = QApplication.primaryScreen()
-        
         if tela:
-            # Obtém a geometria disponível da tela (excluindo barras de tarefas)
-            geometria_disponivel = tela.availableGeometry()
-            
-            # Obtém o fator de escala DPI
-            dpi_scale = tela.devicePixelRatio()
-            
-            # Calcula o tamanho baseado no percentual
-            largura = int(geometria_disponivel.width() * percentual / 100)
-            altura = int(geometria_disponivel.height() * percentual / 100)
-            
-            # Calcula a posição para centralizar a janela
-            x = geometria_disponivel.x() + (geometria_disponivel.width() - largura) // 2
-            y = geometria_disponivel.y() + (geometria_disponivel.height() - altura) // 2
-            
-            # Define a geometria da janela
+            geo = tela.availableGeometry()
+            largura = int(geo.width() * largura_pct / 100)
+            altura  = int(geo.height() * altura_pct / 100)
+            x = geo.x() + (geo.width()  - largura) // 2
+            y = geo.y() + (geo.height() - altura)  // 2
             self.setGeometry(x, y, largura, altura)
-            
-            print(f"Janela ajustada para: {largura}x{altura} na posição ({x}, {y})")
-            print(f"DPI Scale Factor: {dpi_scale}")
-            print(f"Resolução da tela: {geometria_disponivel.width()}x{geometria_disponivel.height()}")
+            print(f"Janela: {largura}x{altura} em ({x}, {y})")
         else:
             print("Não foi possível detectar a tela")
-    
-    def maximizarJanela(self):
-        """Maximiza a janela para ocupar toda a tela disponível"""
-        self.showMaximized()
-    
-    def ajustarJanelaPersonalizado(self, largura, altura, centralizar=True):
-        """
-        Ajusta a janela para um tamanho personalizado.
-        
-        Args:
-            largura (int): Largura desejada em pixels
-            altura (int): Altura desejada em pixels
-            centralizar (bool): Se True, centraliza a janela na tela
-        """
-        self.resize(largura, altura)
-        
-        if centralizar:
-            tela = QApplication.primaryScreen()
-            if tela:
-                geometria_disponivel = tela.availableGeometry()
-                x = geometria_disponivel.x() + (geometria_disponivel.width() - largura) // 2
-                y = geometria_disponivel.y() + (geometria_disponivel.height() - altura) // 2
-                self.move(x, y)
 
-#Executa o App
+
+# ── Execução ─────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    # Habilita suporte a High DPI antes de criar a aplicação
     QApplication.setHighDpiScaleFactorRoundingPolicy(Qt.HighDpiScaleFactorRoundingPolicy.PassThrough)
     QApplication.setAttribute(Qt.AA_EnableHighDpiScaling)
     QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)
-    
+
     app = QApplication(sys.argv)
     janela = janelaPrincipal()
     janela.show()
