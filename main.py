@@ -36,7 +36,10 @@ class PlayWrightBot(QThread):
                 channel="msedge", 
                 headless=False)
             self.pagina = await self.navegador.new_page()
+            self.pagina.set_default_timeout(0)
             self.pagina2 = await self.navegador.new_page()
+            self.pagina2.set_default_timeout(0)
+            
             #Login na conta
             await self.pagina.goto(self.url, wait_until="commit", timeout=0)
 
@@ -100,23 +103,34 @@ class PlayWrightBot(QThread):
             await self.pagina.get_by_role("button", name="Entrar").click()
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").click()
             #await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-header/div/div[2]/div/div[3]/p-checkbox/div/div[2]/span").click()
-            tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button/img')
-            await self.pagina.pause()
+            #await self.pagina.pause()
 
             #Coletar informações do Alerta
             while not self.isInterruptionRequested():
-                
+                            
                 # Aguarda se estiver processando manualmente (invalidando, etc)
                 while self.processando_alerta:
                     await asyncio.sleep(0.5)
                     print(">>> Aguardando processamento manual...")
+
+                try:
+                    await self.pagina.wait_for_selector(
+                        'xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button',
+                        state="detached",  # ← espera o elemento ser removido do DOM
+                        timeout=10000
+                    )
+                    print(">>> Alerta removido da tela")
+                except:
+                    pass  # se não remover em 10s, continua mesmo assim
+                                
+                tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button')
 
                 quantidade = await tratativa.count()
                 print(f">>> Quantidade de alertas: {quantidade}")
                 
                 if quantidade == 0:
                     print(">>> Sem alertas, aguardando...")
-                    await asyncio.sleep(5)
+                    await asyncio.sleep(10)
                     continue
                 
                 habilitado = await tratativa.is_enabled()
@@ -127,21 +141,20 @@ class PlayWrightBot(QThread):
                     continue
                 
                 self.processando_alerta = True  # Marca que está processando
-                
-                await self.pagina.wait_for_timeout(1000)
-
                 await tratativa.click()
                 
-                self.alerta = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[1]/p-dropdown/div/label").inner_text()
+                self.alerta = await self.pagina.locator("step-infos label:has-text('Tipo de Alerta') + p-dropdown label.ui-dropdown-label").inner_text()
 
-                self.placa = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[2]/p").inner_text()
+                self.placa = await self.pagina.locator("step-infos label:has-text('Placa / Prefixo') + p").inner_text()
 
-                self.filial = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[4]/p").inner_text()
+                self.empresa = await self.pagina.locator("step-infos label:has-text('Empresa') + p").inner_text()
 
-                self.empresa = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[3]").inner_text()
-                
-                self.motorista = await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[3]/div/div/treatment-flow/div/div/div[3]/div[1]/div/step-infos/div[1]/div[5]/p").inner_text()
-                
+                self.filial = await self.pagina.locator("step-infos label:has-text('Filial') + p").inner_text()
+
+                self.motorista = await self.pagina.locator("step-infos label:has-text('Motorista') + p").inner_text()
+
+                print(self.alerta, self.placa, self.empresa, self.filial, self.motorista)
+
                 #Download do vídeo - usa .first para pegar o primeiro elemento quando há múltiplos
                 await self.pagina.locator(".playMovie").first.dblclick()
                 await self.pagina.wait_for_timeout(1000)
@@ -346,99 +359,135 @@ class PlayWrightBot(QThread):
                 self.preencherTextoAusencia(tipo_ausencia), self.loop
             )
     async def alertaMonitorado(self):
-        await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
-        await self.pagina.wait_for_timeout(300)
-        await self.pagina.get_by_role("button", name="Concluir").click()
-        print(">>> Aguardando tabela atualizar...")
-        await self.pagina.wait_for_timeout(3000)
-        await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
+        try:
+            await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
+            await self.pagina.wait_for_timeout(300)
+            await self.pagina.get_by_role("button", name="Concluir").click()
+            await self.pagina2.wait_for_timeout(500)
+            
+            self.btnOk = self.pagina.locator(".ajs-dialog:has-text('Não foi encontrado nenhum registro') button.ajs-button").first
+            if await self.btnOk.count() > 0:
+                await self.pagina.evaluate("""
+                    document.querySelector(".ajs-dialog button.ajs-button") && 
+                    document.querySelector(".ajs-dialog button.ajs-button").click()
+                """)
+                print(">>> Modal fechado via JS")
+
+            print(">>> Aguardando tabela atualizar...")
+            await self.pagina.wait_for_timeout(3000)
+            await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
+            await self.pagina.wait_for_load_state("networkidle", timeout=10000)
+        except Exception as e:
+            print(f">>>ERRO {e}")
+        finally:
+            self.processando_alerta = False
         
         print(">>> Tratativa Monitorada")
 
     
     async def subirVideoZap(self):
-        await self.pagina2.get_by_role("button", name="Anexar").click()
-        await self.pagina2.wait_for_timeout(500)
-        await self.pagina2.click('button[aria-label="Fotos e vídeos"]')
-        await self.pagina2.wait_for_timeout(500)
-        await self.pagina2.locator('input[accept="image/*,video/mp4,video/3gpp,video/quicktime,video/webm,video/x-matroska"]').set_input_files(self.diretoriofinal)
-        
-        # Fecha o seletor de arquivos do Windows com pyautogui
-        await self.pagina2.wait_for_timeout(500)
-        pyautogui.hotkey('alt', 'F4')  # fecha a janela nativa
-        await self.pagina2.wait_for_timeout(500)
-        
-        await self.pagina2.get_by_test_id("media-caption-input-container").get_by_role("paragraph").fill(self.reportOperacao)
-        await self.pagina2.wait_for_timeout(500)
-        await self.pagina2.get_by_role("button", name="Enviar 1 item selecionado").click()
-        await self.pagina2.wait_for_timeout(1000)
-        await self.pagina2.get_by_role("button", name="End icon button").click()
-        await self.pagina2.wait_for_timeout(500)
-        await self.pagina2.get_by_text("Alerta de Fadiga - África").click()
-        await self.pagina2.wait_for_timeout(100)
-
+        try:
+            await self.pagina2.get_by_role("button", name="Anexar").click()
+            await self.pagina2.wait_for_timeout(2000)
+            await self.pagina2.click('button[aria-label="Fotos e vídeos"]')
+            await self.pagina2.wait_for_timeout(2000)
+            await self.pagina2.locator('input[accept="image/*,video/mp4,video/3gpp,video/quicktime,video/webm,video/x-matroska"]').set_input_files(self.diretoriofinal)
+            
+            # Fecha o seletor de arquivos do Windows com pyautogui
+            await self.pagina2.wait_for_timeout(2000)
+            pyautogui.hotkey('alt', 'F4')  # fecha a janela nativa
+            await self.pagina2.wait_for_timeout(2000)
+            
+            await self.pagina2.get_by_test_id("media-caption-input-container").get_by_role("paragraph").fill(self.reportOperacao)
+            await self.pagina2.wait_for_timeout(500)
+            await self.pagina2.get_by_role("button", name="Enviar 1 item selecionado").click()
+            await self.pagina2.wait_for_timeout(1000)
+            await self.pagina2.get_by_role("button", name="End icon button").click()
+            await self.pagina2.wait_for_timeout(500)
+            await self.pagina2.get_by_text("Alerta de Fadiga - África").click()
+            await self.pagina2.wait_for_timeout(100)
+        except Exception as e:
+            import traceback
+            print(f">>> ERRO subirVideoZap: {e}")
+            traceback.print_exc()
         
     async def reportarOperacao(self):
-        await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
-        await self.pagina.wait_for_timeout(300)
-        self.reportOperacao = await self.pagina.locator('div[style="width: 100%;"]').inner_text()
+        
+        try:
+            await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
+            await self.pagina.wait_for_timeout(300)
+            self.reportOperacao = await self.pagina.locator('div[style="width: 100%;"]').inner_text()
 
-        print(self.reportOperacao)
+            print(self.reportOperacao)
 
-        match self.filial: 
-            case "Distribuição":
-                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - distribuição")
-                await self.pagina2.wait_for_timeout(500)
-                await self.pagina2.get_by_text("Alerta de Fadiga - Distribui").click()
-                await self.pagina2.wait_for_timeout(500)
-                await self.subirVideoZap()
-            case "Costa Rica" | "Costa Rica Leves":
-                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - costa rica")
-                await self.pagina2.wait_for_timeout(500)
-                await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Cost").click()
-                await self.pagina2.wait_for_timeout(500)
-                await self.subirVideoZap()
-            case "Alto Taquari":
-                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - alto taquari")
-                await self.pagina2.wait_for_timeout(500)
-                await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Alto").click()
-                await self.pagina2.wait_for_timeout(500)
-                await self.subirVideoZap()
-            case "Cenibra NE" | "Cenibra BO" | "Cenibra SB Agregados":
-                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cenibra")
-                await self.pagina2.wait_for_timeout(500)
-                await self.pagina2.get_by_text("Alerta de Fadiga - Cenibra").click()
-                await self.pagina2.wait_for_timeout(500)
-                await self.subirVideoZap()
-            case "Catalão":
-                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cmoc")
-                await self.pagina2.wait_for_timeout(500)
-                await self.pagina2.get_by_text("Alerta de Fadiga - CMOC").click()
-                await self.pagina2.wait_for_timeout(500)
-                await self.subirVideoZap()
-            case "Químico 1 Felipe" | "Automotivo Fabiano" | "Automotivo Felipe" | "Automotivo Alvaro" | "Químico 2 Fabiano":
-                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - rodoviario")
-                await self.pagina2.wait_for_timeout(500)
-                await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Rodoviário").click()
-                await self.pagina2.wait_for_timeout(500)
-                await self.subirVideoZap()
-            case "Transporte de Madeira - Expresso/RS":
-                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cmpc")
-                await self.pagina2.wait_for_timeout(500)
-                await self.pagina2.get_by_text("Alerta de Fadiga - CMPC").click()
-                await self.pagina2.wait_for_timeout(500)
-                await self.subirVideoZap()
-            case "GRID 1" | "GRID 2" | "GRID 3":
-                await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - bracell")
-                await self.pagina2.wait_for_timeout(500)
-                await self.pagina2.get_by_text("Alerta de Fadiga - Bracell").click()
-                await self.pagina2.wait_for_timeout(500)
-                await self.subirVideoZap()
-            
-        await self.pagina.get_by_role("button", name="Concluir").click()
-        print(">>> Aguardando tabela atualizar...")
-        await self.pagina.wait_for_timeout(3000)
-        await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
+            match self.filial: 
+                case "Distribuição":
+                    await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - distribuição")
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.pagina2.get_by_text("Alerta de Fadiga - Distribui").click()
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.subirVideoZap()
+                case "Costa Rica" | "Costa Rica Leves":
+                    await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - costa rica")
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Cost").click()
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.subirVideoZap()
+                case "Alto Taquari":
+                    await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - alto taquari")
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Alto").click()
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.subirVideoZap()
+                case "Cenibra NE" | "Cenibra BO" | "Cenibra SB Agregados":
+                    await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cenibra")
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.pagina2.get_by_text("Alerta de Fadiga - Cenibra").click()
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.subirVideoZap()
+                case "Catalão":
+                    await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cmoc")
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.pagina2.get_by_text("Alerta de Fadiga - CMOC").click()
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.subirVideoZap()
+                case "Químico 1 Felipe" | "Automotivo Fabiano" | "Automotivo Felipe" | "Automotivo Alvaro" | "Químico 2 Fabiano" | "Automotivo Kamilla":
+                    await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - rodoviario")
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Rodoviário").click()
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.subirVideoZap()
+                case "Transporte de Madeira - Expresso/RS":
+                    await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cmpc")
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.pagina2.get_by_text("Alerta de Fadiga - CMPC").click()
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.subirVideoZap()
+                case "GRID 1" | "GRID 2" | "GRID 3":
+                    await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - bracell")
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.pagina2.get_by_text("Alerta de Fadiga - Bracell").click()
+                    await self.pagina2.wait_for_timeout(500)
+                    await self.subirVideoZap()
+                
+            await self.pagina.get_by_role("button", name="Concluir").click()
+
+            self.btnOk = self.pagina.locator(".ajs-dialog:has-text('Não foi encontrado nenhum registro') button.ajs-button").first
+            if await self.btnOk.count() > 0:
+                await self.pagina.evaluate("""
+                    document.querySelector(".ajs-dialog button.ajs-button") && 
+                    document.querySelector(".ajs-dialog button.ajs-button").click()
+                """)
+                print(">>> Modal fechado via JS")
+                await self.pagina.wait_for_timeout(500)
+            print(">>> Aguardando tabela atualizar...")
+            await self.pagina.wait_for_timeout(3000)
+            await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
+            await self.pagina.wait_for_load_state("networkidle", timeout=10000)
+        except Exception as e:
+            print(f">>> ERRO {e}")
+        finally:
+            self.processando_alerta = False
 
     def clickMonitorado(self):
         if self.loop:
@@ -452,6 +501,9 @@ class PlayWrightBot(QThread):
 
     async def invalidarAlerta(self):
         """Invalida o alerta atual voltando e selecionando 'Alerta invalidado'"""
+        if not self.processando_alerta:
+            print("Invalidação ignorada, já processando")
+            return
         try:
             print(">>> Iniciando invalidação do alerta")
             self.processando_alerta = True  # Bloqueia o loop principal
@@ -501,12 +553,21 @@ class PlayWrightBot(QThread):
             await self.pagina.wait_for_timeout(300)
 
             await self.pagina.get_by_role("button", name="Ok").click()
-            
+            await self.pagina2.wait_for_timeout(500)
 
+            self.btnOk = self.pagina.locator(".ajs-dialog:has-text('Não foi encontrado nenhum registro') button.ajs-button").first
+            if await self.btnOk.count() > 0:
+                await self.pagina.evaluate("""
+                    document.querySelector(".ajs-dialog button.ajs-button") && 
+                    document.querySelector(".ajs-dialog button.ajs-button").click()
+                """)
+                print(">>> Modal fechado via JS")
+            
             print(">>> Aguardando tabela atualizar...")
             await self.pagina.wait_for_timeout(3000)
 
-            await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()            
+            await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
+            await self.pagina.wait_for_load_state("networkidle", timeout=10000)           
             
             # Emite sinal de tratativa finalizada para apagar o vídeo
             print(">>> Invalidação concluída com sucesso - Vídeo será apagado")
@@ -835,18 +896,17 @@ class janelaPrincipal(QMainWindow):
 
     def atualizarTabela(self, linhas, dados):
         print(f'>>> dados: {dados}')
+        if hasattr(self, 'noHistoricoLabel'):
+                self.noHistoricoLabel.deleteLater()
+                del self.noHistoricoLabel       
         if linhas == 0:
             self.tabela.hide()
             self.noHistoricoLabel = QLabel("Nenhum alerta anterior encontrado")
             self.noHistoricoLabel.setAlignment(Qt.AlignCenter)
             self.layoutTabela.addWidget(self.noHistoricoLabel)
-            self.layoutTabela.addStretch()
-        else:
-            if hasattr(self, 'noHistoricoLabel'):
-                self.noHistoricoLabel.hide()
-                del self.noHistoricoLabel
-                self.tabela.show()
 
+        else:
+            self.tabela.show()
             self.tabela.setRowCount(linhas)
             for i, (tipo, quando, tratativa) in enumerate(dados):
                 self.tabela.setItem(i, 0, QTableWidgetItem(tipo))
