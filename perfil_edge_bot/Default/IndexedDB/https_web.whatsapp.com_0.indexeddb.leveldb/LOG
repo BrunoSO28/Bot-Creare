@@ -1,29 +1,90 @@
-2026/05/16-17:48:10.492 5610 Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
-2026/05/16-17:48:10.501 5610 Recovering log #1650
-2026/05/16-17:48:10.548 5610 Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/001650.log 
-2026/05/16-17:48:15.648 5610 Compacting 1@1 + 11@2 files
-2026/05/16-17:48:15.746 5610 Generated table #1672@1: 4030 keys, 2123534 bytes
-2026/05/16-17:48:15.825 5610 Generated table #1673@1: 2016 keys, 2123703 bytes
-2026/05/16-17:48:15.882 5610 Generated table #1674@1: 3188 keys, 2128650 bytes
-2026/05/16-17:48:15.989 5610 Generated table #1675@1: 34021 keys, 2166279 bytes
-2026/05/16-17:48:16.339 5610 Generated table #1676@1: 113097 keys, 2265714 bytes
-2026/05/16-17:48:16.500 5610 Generated table #1677@1: 113445 keys, 2264008 bytes
-2026/05/16-17:48:16.757 5610 Generated table #1678@1: 113234 keys, 2263646 bytes
-2026/05/16-17:48:17.009 5610 Generated table #1679@1: 112659 keys, 2264783 bytes
-2026/05/16-17:48:17.234 5610 Generated table #1680@1: 112543 keys, 2264252 bytes
-2026/05/16-17:48:17.447 5610 Generated table #1681@1: 113143 keys, 2264626 bytes
-2026/05/16-17:48:17.473 5610 Generated table #1682@1: 3715 keys, 75647 bytes
-2026/05/16-17:48:17.474 5610 Compacted 1@1 + 11@2 files => 22204842 bytes
-2026/05/16-17:48:17.477 5610 compacted to: files[ 0 0 35 0 0 0 0 ]
-2026/05/16-17:48:17.480 5610 Delete type=2 #1617
-2026/05/16-17:48:17.481 5610 Delete type=2 #1618
-2026/05/16-17:48:17.485 5610 Delete type=2 #1619
-2026/05/16-17:48:17.485 5610 Delete type=2 #1620
-2026/05/16-17:48:17.485 5610 Delete type=2 #1621
-2026/05/16-17:48:17.485 5610 Delete type=2 #1622
-2026/05/16-17:48:17.486 5610 Delete type=2 #1623
-2026/05/16-17:48:17.487 5610 Delete type=2 #1624
-2026/05/16-17:48:17.487 5610 Delete type=2 #1625
-2026/05/16-17:48:17.488 5610 Delete type=2 #1647
-2026/05/16-17:48:17.489 5610 Delete type=2 #1648
-2026/05/16-17:48:17.490 5610 Delete type=2 #1652
+2026/05/18-17:50:00.658 3e60 Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/05/18-17:50:00.723 3e60 Recovering log #8848
+2026/05/18-17:50:00.810 3e60 Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\IndexedDB\https_web.whatsapp.com_0.indexeddb.leveldb/008848.log 
+2026/05/18-17:50:06.370 3e60 Level-0 table #8902: started
+2026/05/18-17:50:06.447 3e60 Level-0 table #8902: 1639016 bytes OK
+2026/05/18-17:50:06.453 3e60 Delete type=0 #8848
+2026/05/18-17:50:07.017 5124 Compacting 1@0 + 0@1 files
+2026/05/18-17:50:07.073 5124 Generated table #8903@0: 12009 keys, 359597 bytes
+2026/05/18-17:50:07.086 5124 Generated table #8904@0: 144 keys, 6417 bytes
+2026/05/18-17:50:07.097 5124 Generated table #8905@0: 134 keys, 2689 bytes
+2026/05/18-17:50:07.114 5124 Generated table #8906@0: 247 keys, 44350 bytes
+2026/05/18-17:50:07.114 5124 Compacted 1@0 + 0@1 files => 413053 bytes
+2026/05/18-17:50:07.116 5124 compacted to: files[ 0 4 86 53 0 0 0 ]
+2026/05/18-17:50:08.014 3e60 Compacting 1@1 + 11@2 files
+2026/05/18-17:50:08.053 3e60 Generated table #8907@1: 10959 keys, 259713 bytes
+2026/05/18-17:50:08.071 3e60 Generated table #8908@1: 3 keys, 2587 bytes
+2026/05/18-17:50:08.128 3e60 Generated table #8909@1: 505 keys, 2121943 bytes
+2026/05/18-17:50:08.182 3e60 Generated table #8910@1: 511 keys, 2120866 bytes
+2026/05/18-17:50:08.278 3e60 Generated table #8911@1: 11687 keys, 2150873 bytes
+2026/05/18-17:50:08.490 3e60 Generated table #8912@1: 37057 keys, 2257638 bytes
+2026/05/18-17:50:08.717 3e60 Generated table #8913@1: 27577 keys, 2277476 bytes
+2026/05/18-17:50:08.957 3e60 Generated table #8914@1: 27386 keys, 2269856 bytes
+2026/05/18-17:50:09.175 3e60 Generated table #8915@1: 28167 keys, 2266294 bytes
+2026/05/18-17:50:09.424 3e60 Generated table #8916@1: 25256 keys, 2273443 bytes
+2026/05/18-17:50:09.733 3e60 Generated table #8917@1: 18283 keys, 2226716 bytes
+2026/05/18-17:50:09.902 3e60 Generated table #8918@1: 23555 keys, 2173234 bytes
+2026/05/18-17:50:09.934 3e60 Generated table #8919@1: 9 keys, 18427 bytes
+2026/05/18-17:50:09.934 3e60 Compacted 1@1 + 11@2 files => 22419066 bytes
+2026/05/18-17:50:09.936 3e60 compacted to: files[ 0 3 88 53 0 0 0 ]
+2026/05/18-17:50:09.939 3e60 Delete type=2 #8902
+2026/05/18-17:50:10.294 3e60 Compacting 1@2 + 14@3 files
+2026/05/18-17:50:10.494 3e60 Generated table #8920@2: 78436 keys, 2226851 bytes
+2026/05/18-17:50:10.739 3e60 Generated table #8921@2: 34357 keys, 2359567 bytes
+2026/05/18-17:50:10.924 3e60 Generated table #8922@2: 50029 keys, 2218235 bytes
+2026/05/18-17:50:10.999 3e60 Generated table #8923@2: 744 keys, 2126085 bytes
+2026/05/18-17:50:11.075 3e60 Generated table #8924@2: 1137 keys, 2134020 bytes
+2026/05/18-17:50:11.161 3e60 Generated table #8925@2: 1730 keys, 2142653 bytes
+2026/05/18-17:50:11.226 3e60 Generated table #8926@2: 1120 keys, 2136201 bytes
+2026/05/18-17:50:11.297 3e60 Generated table #8927@2: 1038 keys, 2130430 bytes
+2026/05/18-17:50:11.359 3e60 Generated table #8928@2: 1062 keys, 2136560 bytes
+2026/05/18-17:50:11.383 3e60 Generated table #8929@2: 82 keys, 406743 bytes
+2026/05/18-17:50:11.384 3e60 Compacted 1@2 + 14@3 files => 20017345 bytes
+2026/05/18-17:50:11.385 3e60 compacted to: files[ 0 3 87 49 0 0 0 ]
+2026/05/18-17:50:11.389 3e60 Delete type=2 #8855
+2026/05/18-17:50:11.389 3e60 Delete type=2 #8856
+2026/05/18-17:50:11.390 3e60 Delete type=2 #8857
+2026/05/18-17:50:11.390 3e60 Delete type=2 #8858
+2026/05/18-17:50:11.390 3e60 Delete type=2 #8859
+2026/05/18-17:50:11.390 3e60 Delete type=2 #8860
+2026/05/18-17:50:11.391 3e60 Delete type=2 #8861
+2026/05/18-17:50:11.391 3e60 Delete type=2 #8862
+2026/05/18-17:50:11.391 3e60 Delete type=2 #8863
+2026/05/18-17:50:11.391 3e60 Delete type=2 #8864
+2026/05/18-17:50:11.391 3e60 Delete type=2 #8865
+2026/05/18-17:50:11.391 3e60 Delete type=2 #8903
+2026/05/18-17:50:24.158 524c Compacting 1@1 + 8@2 files
+2026/05/18-17:50:24.490 524c Generated table #8930@1: 109178 keys, 2259990 bytes
+2026/05/18-17:50:24.770 524c Generated table #8931@1: 110344 keys, 2259889 bytes
+2026/05/18-17:50:25.028 524c Generated table #8932@1: 109976 keys, 2261075 bytes
+2026/05/18-17:50:25.315 524c Generated table #8933@1: 109425 keys, 2259279 bytes
+2026/05/18-17:50:25.752 524c Generated table #8934@1: 110003 keys, 2261442 bytes
+2026/05/18-17:50:26.050 524c Generated table #8935@1: 109336 keys, 2260798 bytes
+2026/05/18-17:50:26.308 524c Generated table #8936@1: 109952 keys, 2261276 bytes
+2026/05/18-17:50:26.788 524c Generated table #8937@1: 76542 keys, 1939061 bytes
+2026/05/18-17:50:26.788 524c Compacted 1@1 + 8@2 files => 17762810 bytes
+2026/05/18-17:50:26.790 524c compacted to: files[ 0 2 87 49 0 0 0 ]
+2026/05/18-17:50:26.794 524c Delete type=2 #8428
+2026/05/18-17:50:26.794 524c Delete type=2 #8640
+2026/05/18-17:50:26.795 524c Delete type=2 #8679
+2026/05/18-17:50:26.795 524c Delete type=2 #8745
+2026/05/18-17:50:26.795 524c Delete type=2 #8833
+2026/05/18-17:50:26.795 524c Delete type=2 #8834
+2026/05/18-17:50:26.796 524c Delete type=2 #8835
+2026/05/18-17:50:26.796 524c Delete type=2 #8836
+2026/05/18-17:50:26.797 524c Delete type=2 #8837
+2026/05/18-17:50:26.797 524c Delete type=2 #8838
+2026/05/18-17:50:26.797 524c Delete type=2 #8878
+2026/05/18-17:50:26.798 524c Delete type=2 #8879
+2026/05/18-17:50:26.798 524c Delete type=2 #8880
+2026/05/18-17:50:26.798 524c Delete type=2 #8881
+2026/05/18-17:50:26.798 524c Delete type=2 #8892
+2026/05/18-17:50:26.798 524c Delete type=2 #8893
+2026/05/18-17:50:26.799 524c Delete type=2 #8894
+2026/05/18-17:50:26.799 524c Delete type=2 #8895
+2026/05/18-17:50:26.799 524c Delete type=2 #8896
+2026/05/18-17:50:26.799 524c Delete type=2 #8897
+2026/05/18-17:50:26.799 524c Delete type=2 #8898
+2026/05/18-17:50:26.800 524c Delete type=2 #8899
+2026/05/18-17:50:26.800 524c Delete type=2 #8906
+2026/05/18-17:50:26.800 524c Delete type=2 #8907

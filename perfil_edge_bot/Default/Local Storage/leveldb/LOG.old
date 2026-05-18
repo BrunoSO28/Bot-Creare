@@ -1,3 +1,6 @@
-2026/05/16-17:41:36.247 29ac Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\Local Storage\leveldb/MANIFEST-000001
-2026/05/16-17:41:36.271 29ac Recovering log #149
-2026/05/16-17:41:36.276 29ac Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\Local Storage\leveldb/000149.log 
+2026/05/18-17:43:22.887 2704 Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\Local Storage\leveldb/MANIFEST-000001
+2026/05/18-17:43:22.932 2704 Recovering log #356
+2026/05/18-17:43:22.939 2704 Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\Local Storage\leveldb/000356.log 
+2026/05/18-17:43:34.420 116c Level-0 table #360: started
+2026/05/18-17:43:34.450 116c Level-0 table #360: 28051 bytes OK
+2026/05/18-17:43:34.454 116c Delete type=0 #356

@@ -107,12 +107,6 @@ class PlayWrightBot(QThread):
 
             #Coletar informações do Alerta
             while not self.isInterruptionRequested():
-                            
-                # Aguarda se estiver processando manualmente (invalidando, etc)
-                while self.processando_alerta:
-                    await asyncio.sleep(0.5)
-                    print(">>> Aguardando processamento manual...")
-
                 try:
                     await self.pagina.wait_for_selector(
                         'xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button',
@@ -122,8 +116,21 @@ class PlayWrightBot(QThread):
                     print(">>> Alerta removido da tela")
                 except:
                     pass  # se não remover em 10s, continua mesmo assim
-                                
-                tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button')
+                                               
+                try:
+                    tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button')
+                except:
+                    pass
+                
+                if not tratativa:
+                    try:
+                        tratativa = self.pagina.get_by_role("button", name="Inserir Tratativa")
+                    except:
+                        pass
+
+                if not tratativa:
+                    tratativa = self.pagina.locator('button[ng-reflect-ngb-tooltip="Inserir Tratativa"]')
+                
 
                 quantidade = await tratativa.count()
                 print(f">>> Quantidade de alertas: {quantidade}")
@@ -212,6 +219,7 @@ class PlayWrightBot(QThread):
                 self.sinalTabela.emit(self.total, dados_tabela)
 
                 await self.pagina.get_by_role("button", name="Aplicar gestão").click()
+                await self.pagina.wait_for_timeout(500)
                 await self.pagina.get_by_role("button", name="Aplicar gestão").click()
                 #await self.pagina.pause()
 
@@ -363,17 +371,9 @@ class PlayWrightBot(QThread):
             await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
             await self.pagina.wait_for_timeout(300)
             await self.pagina.get_by_role("button", name="Concluir").click()
-            await self.pagina2.wait_for_timeout(500)
-            
-            self.btnOk = self.pagina.locator(".ajs-dialog:has-text('Não foi encontrado nenhum registro') button.ajs-button").first
-            if await self.btnOk.count() > 0:
-                await self.pagina.evaluate("""
-                    document.querySelector(".ajs-dialog button.ajs-button") && 
-                    document.querySelector(".ajs-dialog button.ajs-button").click()
-                """)
-                print(">>> Modal fechado via JS")
 
-            print(">>> Aguardando tabela atualizar...")
+            await self.pagina.mouse.click(400, 10)     
+
             await self.pagina.wait_for_timeout(3000)
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
             await self.pagina.wait_for_load_state("networkidle", timeout=10000)
@@ -472,14 +472,8 @@ class PlayWrightBot(QThread):
                 
             await self.pagina.get_by_role("button", name="Concluir").click()
 
-            self.btnOk = self.pagina.locator(".ajs-dialog:has-text('Não foi encontrado nenhum registro') button.ajs-button").first
-            if await self.btnOk.count() > 0:
-                await self.pagina.evaluate("""
-                    document.querySelector(".ajs-dialog button.ajs-button") && 
-                    document.querySelector(".ajs-dialog button.ajs-button").click()
-                """)
-                print(">>> Modal fechado via JS")
-                await self.pagina.wait_for_timeout(500)
+            await self.pagina.mouse.click(400, 10)
+
             print(">>> Aguardando tabela atualizar...")
             await self.pagina.wait_for_timeout(3000)
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
@@ -550,21 +544,22 @@ class PlayWrightBot(QThread):
             await self.pagina.wait_for_timeout(300)
 
             await self.pagina.get_by_role("button", name="Finalizar").nth(1).click()
-            await self.pagina.wait_for_timeout(300)
-
-            await self.pagina.get_by_role("button", name="Ok").click()
+            await self.pagina.wait_for_timeout(500)
+            
+            await self.pagina.mouse.click(400, 10)
             await self.pagina2.wait_for_timeout(500)
 
-            self.btnOk = self.pagina.locator(".ajs-dialog:has-text('Não foi encontrado nenhum registro') button.ajs-button").first
-            if await self.btnOk.count() > 0:
-                await self.pagina.evaluate("""
-                    document.querySelector(".ajs-dialog button.ajs-button") && 
-                    document.querySelector(".ajs-dialog button.ajs-button").click()
-                """)
-                print(">>> Modal fechado via JS")
+            await self.pagina.mouse.click(400, 10)
+            await self.pagina2.wait_for_timeout(500)
             
+            await self.pagina.mouse.click(400, 10)
+            await self.pagina2.wait_for_timeout(500)
+            
+            #await page.mouse.dblclick(10, 10, { delay: 300 });             
             print(">>> Aguardando tabela atualizar...")
-            await self.pagina.wait_for_timeout(3000)
+                            
+            print(">>> Aguardando tabela atualizar...")
+   
 
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
             await self.pagina.wait_for_load_state("networkidle", timeout=10000)           
@@ -698,11 +693,12 @@ class janelaPrincipal(QMainWindow):
 
         self.btnValido = QPushButton("Válido")
         self.btnValido.clicked.connect(self.abrirTratativa)
-        self.btnValido.setStyleSheet("background-color: #2a7d2a; color: white; font-weight: bold;")
+        self.btnValido.setStyleSheet("QPushButton {background-color: #2a7d2a; color: white;} QPushButton:hover{background-color: #9fdf9f}")
+        
 
         self.btnInvalido = QPushButton("Inválido")
         self.btnInvalido.clicked.connect(self.clickInvalidar)
-        self.btnInvalido.setStyleSheet("background-color: #990000; color: white; font-weight: bold;")
+        self.btnInvalido.setStyleSheet("QPushButton {background-color: #990000; color: white;} QPushButton:hover{background-color: #ff8080}")
 
         for btn in [self.btnValido, self.btnInvalido]:
             btn.setFont(fonte_p)
