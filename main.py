@@ -12,7 +12,7 @@ import pyautogui
 #BOT do navegador
 class PlayWrightBot(QThread):
     sinalInfo = Signal(str,str,str,str,str)
-    sinalDownload = Signal(str)
+    sinalDownload = Signal(str, str, str, str)
     sinalTratativas = Signal(list)
     sinalPronto = Signal()
     sinalColunas = Signal(int)  # Novo sinal para enviar a quantidade de colunas
@@ -34,7 +34,7 @@ class PlayWrightBot(QThread):
             self.navegador = await pw.chromium.launch_persistent_context(
                 user_data_dir="perfil_edge_bot",
                 channel="msedge", 
-                headless=False)
+                headless=False,                )
             self.pagina = await self.navegador.new_page()
             self.pagina.set_default_timeout(0)
             self.pagina2 = await self.navegador.new_page()
@@ -165,22 +165,58 @@ class PlayWrightBot(QThread):
                 #Download do vídeo - usa .first para pegar o primeiro elemento quando há múltiplos
                 await self.pagina.locator(".playMovie").first.dblclick()
                 await self.pagina.wait_for_timeout(1000)
-                videoDl = self.pagina.locator("xpath=/html/body/dinamic-dialog/div/div/ng-component/div/ul/li[1]/div/div/app-download-button/button/i")
+                video1 = self.pagina.locator("xpath=/html/body/dinamic-dialog/div/div/ng-component/div/ul/li[1]/div/div/app-download-button/button/i")
+
+                video2 = self.pagina.locator("li:nth-child(2) > .video-wrapper > .download-container > app-download-button > .download-button")
+
+                #video3 = self.pagina.locator("li:nth-child(3) > .video-wrapper > .download-container > app-download-button > .download-button")
+
+                video4 = self.pagina.locator("li:nth-child(4) > .video-wrapper > .download-container > app-download-button > .download-button")
+
+                video5 = self.pagina.locator("li:nth-child(5) > .video-wrapper > .download-container > app-download-button > .download-button")
+
                 
                 self._video_liberado.clear()
                 self.sinalLiberarVideo.emit()
                 await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
 
-                async with self.pagina.expect_download() as downloadVideo:
-                    await videoDl.click()
-                    download = await downloadVideo.value
-
+                async with self.pagina.expect_download() as downloadVideo1:
                     diretorio = os.getcwd()
-                    self.diretoriofinal = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera.mp4")
+                    await video1.click()
+                    download1 = await downloadVideo1.value
 
-                    await download.save_as(self.diretoriofinal)
+                    self.diretoriofinal1 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera.mp4")
 
-                    self.sinalDownload.emit(self.diretoriofinal)
+                    await download1.save_as(self.diretoriofinal1)
+
+                async with self.pagina.expect_download() as downloadVideo2:
+                    await video2.click()
+                    download2 = await downloadVideo2.value
+
+                    self.diretoriofinal2 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera2.mp4")
+                    await download2.save_as(self.diretoriofinal2)
+
+                    '''await video3.click()
+                    download3 = await downloadVideo.value
+
+                    self.diretoriofinal3 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera3.mp4")
+                    await download3.save_as(self.diretoriofinal3)'''
+
+                async with self.pagina.expect_download() as downloadVideo4:
+                    await video4.click()
+                    download4 = await downloadVideo4.value
+
+                    self.diretoriofinal4 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera4.mp4")
+                    await download4.save_as(self.diretoriofinal4)
+                
+                async with self.pagina.expect_download() as downloadVideo5:
+                    await video5.click()
+                    download5 = await downloadVideo5.value
+
+                    self.diretoriofinal5 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera5.mp4")
+                    await download5.save_as(self.diretoriofinal5)
+
+                self.sinalDownload.emit(self.diretoriofinal1, self.diretoriofinal2, self.diretoriofinal4, self.diretoriofinal5)
 
                 self.sinalInfo.emit(self.alerta,self.placa,self.empresa,self.filial,self.motorista)
                 
@@ -643,6 +679,14 @@ class janelaPrincipal(QMainWindow):
         self.status_label.setFont(QFont("Arial", 11, QFont.Bold))
         layoutCentro.addWidget(self.status_label)
 
+        # Seletor de vídeos
+        self.seletorVideo = QComboBox()
+        self.seletorVideo.addItem("Sonolência")
+        self.seletorVideo.addItem("Câmera Frontal")
+        self.seletorVideo.addItem("Câmera Lateral")
+        self.seletorVideo.addItem("Câmera Cabine")
+        layoutCentro.addWidget(self.seletorVideo)
+
         # Vídeo – maior e proporcional
         self.caixaVideo = QVideoWidget()
         self.caixaVideo.setMinimumSize(520, 400)
@@ -910,9 +954,9 @@ class janelaPrincipal(QMainWindow):
                 self.tabela.setItem(i, 2, QTableWidgetItem(tratativa))
             print(f">>> Tabela atualizada com {linhas} linhas")
 
-    def downloadConcluido(self, diretorioFinal):
-        self.video_atual = diretorioFinal
-        self.player.setSource(QUrl.fromLocalFile(diretorioFinal))
+    def downloadConcluido(self, video1, video2, video4, video5):
+        self.video_atual = video1
+        self.player.setSource(QUrl.fromLocalFile(video1))
         self.player.play()
 
     def liberarVideoAtual(self):
