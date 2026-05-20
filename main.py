@@ -12,7 +12,7 @@ import pyautogui
 #BOT do navegador
 class PlayWrightBot(QThread):
     sinalInfo = Signal(str,str,str,str,str)
-    sinalDownload = Signal(str, str, str, str)
+    sinalDownload = Signal(str, str, str, str, str)
     sinalTratativas = Signal(list)
     sinalPronto = Signal()
     sinalColunas = Signal(int)  # Novo sinal para enviar a quantidade de colunas
@@ -169,54 +169,98 @@ class PlayWrightBot(QThread):
 
                 video2 = self.pagina.locator("li:nth-child(2) > .video-wrapper > .download-container > app-download-button > .download-button")
 
-                #video3 = self.pagina.locator("li:nth-child(3) > .video-wrapper > .download-container > app-download-button > .download-button")
+                video3 = self.pagina.locator("li:nth-child(3) > .video-wrapper > .download-container > app-download-button > .download-button")
 
                 video4 = self.pagina.locator("li:nth-child(4) > .video-wrapper > .download-container > app-download-button > .download-button")
 
                 video5 = self.pagina.locator("li:nth-child(5) > .video-wrapper > .download-container > app-download-button > .download-button")
 
-                
-                self._video_liberado.clear()
-                self.sinalLiberarVideo.emit()
-                await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
+                try:
+                    if await video1.count() > 0:
+                        async with self.pagina.expect_download() as downloadVideo1:
+                            diretorio = os.getcwd()
+                            await video1.click()
+                            download1 = await downloadVideo1.value
 
-                async with self.pagina.expect_download() as downloadVideo1:
-                    diretorio = os.getcwd()
-                    await video1.click()
-                    download1 = await downloadVideo1.value
+                            self.diretoriofinal1 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera1.mp4")
 
-                    self.diretoriofinal1 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera.mp4")
+                            await download1.save_as(self.diretoriofinal1)
+                    else:
+                        print(">>> Vídeo 1 não encontrado para download")
+                except Exception as e:
+                    print(f">>> Vídeo não disponível para download: {e}")
 
-                    await download1.save_as(self.diretoriofinal1)
+                try:
+                    if await video2.count() > 0:
+                        async with self.pagina.expect_download() as downloadVideo2:
+                            diretorio = os.getcwd()
+                            await video2.click()
+                            download2 = await downloadVideo2.value
 
-                async with self.pagina.expect_download() as downloadVideo2:
-                    await video2.click()
-                    download2 = await downloadVideo2.value
+                            self.diretoriofinal2 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera2.mp4")
 
-                    self.diretoriofinal2 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera2.mp4")
-                    await download2.save_as(self.diretoriofinal2)
+                            await download2.save_as(self.diretoriofinal2)
+                    else:
+                        print(">>> Vídeo 2 não encontrado para download")
+                except Exception as e:
+                    print(f">>> Vídeo não disponível para download: {e}")
+    
+                try:
+                    if await video3.count() > 0:
+                        async with self.pagina.expect_download() as downloadVideo3:
+                            await self.pagina.evaluate("""
+                                (el) => {
+                                    let parent = el.parentElement;
+                                    while (parent) {
+                                        parent.scrollLeft += el.getBoundingClientRect().left;
+                                        parent = parent.parentElement;
+                                    }
+                                }
+                            """, await video3.element_handle())
+                            await self.pagina.wait_for_timeout(300)
 
-                    '''await video3.click()
-                    download3 = await downloadVideo.value
+                            # Clica via JavaScript, ignorando restrições de viewport
+                            await video3.dispatch_event("click")
+                            download3 = await downloadVideo3.value
 
-                    self.diretoriofinal3 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera3.mp4")
-                    await download3.save_as(self.diretoriofinal3)'''
+                            self.diretoriofinal3 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera3.mp4")
+                            await download3.save_as(self.diretoriofinal3)
+                    else:
+                        print(">>> Vídeo 3 não encontrado para download")
+                except Exception as e:
+                    print(f">>> Vídeo não disponível para download: {e}")
 
-                async with self.pagina.expect_download() as downloadVideo4:
-                    await video4.click()
-                    download4 = await downloadVideo4.value
+                try:
+                    if await video4.count() > 0:
+                        async with self.pagina.expect_download() as downloadVideo4:
+                            diretorio = os.getcwd()
+                            await video4.click()
+                            download4 = await downloadVideo4.value
 
-                    self.diretoriofinal4 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera4.mp4")
-                    await download4.save_as(self.diretoriofinal4)
-                
-                async with self.pagina.expect_download() as downloadVideo5:
-                    await video5.click()
-                    download5 = await downloadVideo5.value
+                            self.diretoriofinal4 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera4.mp4")
 
-                    self.diretoriofinal5 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera5.mp4")
-                    await download5.save_as(self.diretoriofinal5)
+                            await download4.save_as(self.diretoriofinal4)
+                    else:
+                        print(">>> Vídeo 4 não encontrado para download")
+                except Exception as e:
+                    print(f">>> Vídeo não disponível para download: {e}")
 
-                self.sinalDownload.emit(self.diretoriofinal1, self.diretoriofinal2, self.diretoriofinal4, self.diretoriofinal5)
+                try:                
+                    if await video5.count() > 0:
+                        async with self.pagina.expect_download() as downloadVideo5:
+                            diretorio = os.getcwd()
+                            await video5.click()
+                            download5 = await downloadVideo5.value
+
+                            self.diretoriofinal5 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera5.mp4")
+
+                            await download5.save_as(self.diretoriofinal5)
+                    else:
+                        print(">>> Vídeo 5 não encontrado para download")
+                except Exception as e:
+                    print(f">>> Vídeo não disponível para download: {e}")
+
+                self.sinalDownload.emit(self.diretoriofinal1 or "", self.diretoriofinal2 or "", self.diretoriofinal3 or "", self.diretoriofinal4 or "", self.diretoriofinal5 or "")
 
                 self.sinalInfo.emit(self.alerta,self.placa,self.empresa,self.filial,self.motorista)
                 
@@ -277,7 +321,7 @@ class PlayWrightBot(QThread):
         asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self.run_playwright())
 
-    def clickSelecao(self, valor: str, janela_callback=None):
+    def clickSelecao(self, valor: str):
         if self.loop:
             asyncio.run_coroutine_threadsafe(
                 self.selecaoTratativa(valor), self.loop
@@ -405,10 +449,19 @@ class PlayWrightBot(QThread):
     async def alertaMonitorado(self):
         try:
             await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
+
+            self._video_liberado.clear()
+            self.sinalLiberarVideo.emit()
+            await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
+
             await self.pagina.wait_for_timeout(300)
             await self.pagina.get_by_role("button", name="Concluir").click()
+            await self.pagina.wait_for_timeout(300)
 
-            await self.pagina.mouse.click(400, 10)     
+            await self.pagina.mouse.click(400, 10)
+            await self.pagina.wait_for_timeout(300)
+            await self.pagina.mouse.click(400, 10)
+
 
             await self.pagina.wait_for_timeout(3000)
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
@@ -451,6 +504,11 @@ class PlayWrightBot(QThread):
         
         try:
             await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
+
+            self._video_liberado.clear()
+            self.sinalLiberarVideo.emit()
+            await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
+
             await self.pagina.wait_for_timeout(300)
             self.reportOperacao = await self.pagina.locator('div[style="width: 100%;"]').inner_text()
 
@@ -507,7 +565,9 @@ class PlayWrightBot(QThread):
                     await self.subirVideoZap()
                 
             await self.pagina.get_by_role("button", name="Concluir").click()
-
+            await self.pagina.wait_for_timeout(300)
+            await self.pagina.mouse.click(400, 10)
+            await self.pagina.wait_for_timeout(300)
             await self.pagina.mouse.click(400, 10)
 
             print(">>> Aguardando tabela atualizar...")
@@ -538,6 +598,9 @@ class PlayWrightBot(QThread):
             print(">>> Iniciando invalidação do alerta")
             self.processando_alerta = True  # Bloqueia o loop principal
             
+            self._video_liberado.clear()
+            self.sinalLiberarVideo.emit()
+            await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
             # Primeiro clique no botão Voltar
             botao_voltar = self.pagina.get_by_role("button", name="Voltar")
             await botao_voltar.click()
@@ -622,6 +685,7 @@ class janelaPrincipal(QMainWindow):
         super().__init__()
         self.setWindowTitle("Revisão de Vídeo")
         self.video_atual = None
+        self.videos = {}
 
         # Janela mais alta e menos larga: 70% largura, 90% altura
         self.ajustarJanelaAoMonitor(largura_pct=70, altura_pct=90)
@@ -681,10 +745,12 @@ class janelaPrincipal(QMainWindow):
 
         # Seletor de vídeos
         self.seletorVideo = QComboBox()
-        self.seletorVideo.addItem("Sonolência")
-        self.seletorVideo.addItem("Câmera Frontal")
-        self.seletorVideo.addItem("Câmera Lateral")
-        self.seletorVideo.addItem("Câmera Cabine")
+        self.seletorVideo.addItem("Câmera 1")
+        self.seletorVideo.addItem("Câmera 2")
+        self.seletorVideo.addItem("Câmera 3")
+        self.seletorVideo.addItem("Câmera 4")
+        self.seletorVideo.addItem("Câmera 5")
+        self.seletorVideo.currentTextChanged.connect(self.trocarVideo)
         layoutCentro.addWidget(self.seletorVideo)
 
         # Vídeo – maior e proporcional
@@ -954,26 +1020,45 @@ class janelaPrincipal(QMainWindow):
                 self.tabela.setItem(i, 2, QTableWidgetItem(tratativa))
             print(f">>> Tabela atualizada com {linhas} linhas")
 
-    def downloadConcluido(self, video1, video2, video4, video5):
-        self.video_atual = video1
-        self.player.setSource(QUrl.fromLocalFile(video1))
-        self.player.play()
+    def downloadConcluido(self, video1, video2, video3, video4, video5):
+        self.videos = {
+            "Câmera 1": video1,
+            "Câmera 2": video2,
+            "Câmera 3": video3,
+            "Câmera 4": video4,
+            "Câmera 5": video5
+        }
+        self.trocarVideo(self.seletorVideo.currentText())
+    
+    def trocarVideo(self, nome: str):
+        caminho = self.videos.get(nome)
+        if caminho and os.path.exists(caminho):
+            self.video_atual = caminho
+            self.player.setSource(QUrl.fromLocalFile(caminho))
+            self.player.play()
+
 
     def liberarVideoAtual(self):
         try:
             self.player.stop()
             self.player.setSource(QUrl())
-            if self.video_atual and os.path.exists(self.video_atual):
+            pasta = os.path.join(os.getcwd(), "perfil_edege_bot", "Downloads")
+            if os.path.exists(pasta):
                 import time
-                for tentativa in range(5):
-                    try:
-                        os.remove(self.video_atual)
-                        print(f">>> Vídeo anterior apagado: {self.video_atual}")
-                        break
-                    except PermissionError:
-                        print(f">>> Tentativa {tentativa + 1}/5 falhou, aguardando...")
-                        time.sleep(0.3)
-                self.video_atual = None
+                for arquivo in os.listdir(pasta):
+                    if arquivo.endswith(".mp4"):
+                        caminho = os.path.join(pasta, arquivo)
+                        for tentativa in range(5):
+                            try:
+                                os.remove(caminho)
+                                print(f">>> Vídeo {caminho} apagado")
+                                break
+                            except PermissionError:
+                                print(f">>> Tentativa {tentativa + 1}/5 falhou, aguardando...")
+                                time.sleep(0.3)
+            self.video_atual = None
+            self.videos = {}
+
         except Exception as e:
             print(f">>> ERRO ao liberar vídeo: {e}")
         finally:
@@ -1011,7 +1096,7 @@ class janelaPrincipal(QMainWindow):
         elif valor == "Ausência - Solicitar ajuste - Gestão de Equipamentos CCI":
             self.mostrarAusencia()
         if self.bot:
-            self.bot.clickSelecao(valor, janela_callback=self)
+            self.bot.clickSelecao(valor, )
 
     def listarTratativas(self, opcoes: list):
         if self.tratativas is None:
