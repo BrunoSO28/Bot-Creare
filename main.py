@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTextEdit, QLineEdit, QComboBox, QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTextEdit, QLineEdit, QComboBox, QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar
 from PySide6.QtMultimedia import QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtCore import QUrl, Qt, QThread, Signal, QRect
@@ -12,13 +12,15 @@ import pyautogui
 #BOT do navegador
 class PlayWrightBot(QThread):
     sinalInfo = Signal(str,str,str,str,str)
-    sinalDownload = Signal(str)
+    sinalDownload = Signal(str, str, str)
     sinalTratativas = Signal(list)
     sinalPronto = Signal()
     sinalColunas = Signal(int)  # Novo sinal para enviar a quantidade de colunas
     sinalVideosCarregados = Signal()  # Novo sinal para quando todos os vídeos forem selecionados
     sinalLiberarVideo = Signal()
     sinalTabela = Signal(int, list)
+    sinalSemAlertas = Signal(bool)
+    sinalContador = Signal(int)
 
     def __init__(self, url):
         super().__init__()
@@ -26,15 +28,24 @@ class PlayWrightBot(QThread):
         self.loop = None
         self.pagina = None
         self.tratativas = None
-        self.processando_alerta = False  # Flag para controlar o processamento
+        self.contador = 0
         self._video_liberado = asyncio.Event()
+        self._tratativa_concluida = asyncio.Event()
+        self._tratativa_concluida.set()  # começa liberado
 
     async def run_playwright(self):
         async with async_playwright() as pw:
             self.navegador = await pw.chromium.launch_persistent_context(
                 user_data_dir="perfil_edge_bot",
-                channel="msedge", 
-                headless=False)
+                channel="msedge",
+                headless=False,
+                args=[
+                "--window-position=-3000,0",  # ✅ joga a janela pra fora da tela
+                "--window-size=1280,720"])
+
+            for pagina in self.navegador.pages:
+                await pagina.close()
+
             self.pagina = await self.navegador.new_page()
             self.pagina.set_default_timeout(0)
             self.pagina2 = await self.navegador.new_page()
@@ -44,7 +55,13 @@ class PlayWrightBot(QThread):
             await self.pagina.goto(self.url, wait_until="commit", timeout=0)
 
             await self.pagina2.goto("https://web.whatsapp.com/", wait_until="commit", timeout=0)
+
+            botaoNestaJanela = self.pagina2.get_by_role("button", name="Usar nesta janela")
             
+            if await botaoNestaJanela.count() > 0 :
+                await botaoNestaJanela.click()
+
+            await self.pagina.bring_to_front()
             # Aguarda o campo de usuário estar visível
             try:
                 # Tenta múltiplas formas de localizar o campo de usuário
@@ -107,37 +124,34 @@ class PlayWrightBot(QThread):
 
             #Coletar informações do Alerta
             while not self.isInterruptionRequested():
+                await self._tratativa_concluida.wait()
                 try:
                     await self.pagina.wait_for_selector(
                         'xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button',
                         state="detached",  # ← espera o elemento ser removido do DOM
-                        timeout=10000
+                        timeout=3000
                     )
                     print(">>> Alerta removido da tela")
                 except:
-                    pass  # se não remover em 10s, continua mesmo assim
-                                               
+                    pass  # se não remover em 10s, continua mesmo assim                               
                 try:
                     tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button')
                 except:
                     pass
-                
                 if not tratativa:
                     try:
                         tratativa = self.pagina.get_by_role("button", name="Inserir Tratativa")
                     except:
                         pass
-
                 if not tratativa:
                     tratativa = self.pagina.locator('button[ng-reflect-ngb-tooltip="Inserir Tratativa"]')
                 
-
                 quantidade = await tratativa.count()
-                print(f">>> Quantidade de alertas: {quantidade}")
-                
+                print(f">>> Quantidade de alertas: {quantidade}")  
                 if quantidade == 0:
+                    self.sinalSemAlertas.emit(True)
                     print(">>> Sem alertas, aguardando...")
-                    await asyncio.sleep(10)
+                    await asyncio.sleep(5)
                     continue
                 
                 habilitado = await tratativa.is_enabled()
@@ -146,8 +160,9 @@ class PlayWrightBot(QThread):
                 if not habilitado:
                     await asyncio.sleep(2)
                     continue
-                
-                self.processando_alerta = True  # Marca que está processando
+
+                self._tratativa_concluida.clear()
+                self.sinalSemAlertas.emit(False)
                 await tratativa.click()
                 
                 self.alerta = await self.pagina.locator("step-infos label:has-text('Tipo de Alerta') + p-dropdown label.ui-dropdown-label").inner_text()
@@ -165,22 +180,65 @@ class PlayWrightBot(QThread):
                 #Download do vídeo - usa .first para pegar o primeiro elemento quando há múltiplos
                 await self.pagina.locator(".playMovie").first.dblclick()
                 await self.pagina.wait_for_timeout(1000)
-                videoDl = self.pagina.locator("xpath=/html/body/dinamic-dialog/div/div/ng-component/div/ul/li[1]/div/div/app-download-button/button/i")
-                
-                self._video_liberado.clear()
-                self.sinalLiberarVideo.emit()
-                await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
 
-                async with self.pagina.expect_download() as downloadVideo:
-                    await videoDl.click()
-                    download = await downloadVideo.value
+                video1 = self.pagina.locator("xpath=/html/body/dinamic-dialog/div/div/ng-component/div/ul/li[1]/div/div/app-download-button/button/i")
 
-                    diretorio = os.getcwd()
-                    self.diretoriofinal = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera.mp4")
+                video2 = self.pagina.locator("li:nth-child(2) > .video-wrapper > .download-container > app-download-button > .download-button")
 
-                    await download.save_as(self.diretoriofinal)
+                video5 = self.pagina.locator("li:nth-child(5) > .video-wrapper > .download-container > app-download-button > .download-button")
 
-                    self.sinalDownload.emit(self.diretoriofinal)
+                self.diretoriofinal1 = ""
+                self.diretoriofinal2 = ""
+                self.diretoriofinal5 = ""
+
+                if self.alerta == "Risco de colisão" or self.alerta == "Pedestre":
+                    try:
+                        if await video2.count() > 0:
+                            async with self.pagina.expect_download() as downloadVideo2:
+                                diretorio = os.getcwd()
+                                await video2.click()
+                                download2 = await downloadVideo2.value
+
+                                self.diretoriofinal2 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera2.mp4")
+
+                                await download2.save_as(self.diretoriofinal2)
+                                
+                        else:
+                            print(">>> Vídeo 2 não encontrado para download")
+                    except Exception as e:
+                        print(f">>> Vídeo não disponível para download: {e}")
+                    self.sinalDownload.emit(self.diretoriofinal2,"","")
+                else:
+                    try:
+                        if await video1.count() > 0:
+                            async with self.pagina.expect_download() as downloadVideo1:
+                                diretorio = os.getcwd()
+                                await video1.click()
+                                download1 = await downloadVideo1.value
+
+                                self.diretoriofinal1 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera1.mp4")
+
+                                await download1.save_as(self.diretoriofinal1)
+                        else:
+                            print(">>> Vídeo 1 não encontrado para download")
+                    except Exception as e:
+                        print(f">>> Vídeo não disponível para download: {e}")
+    
+                    try:                
+                        if await video5.count() > 0:
+                            async with self.pagina.expect_download() as downloadVideo5:
+                                diretorio = os.getcwd()
+                                await video5.click()
+                                download5 = await downloadVideo5.value
+
+                                self.diretoriofinal5 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera5.mp4")
+
+                                await download5.save_as(self.diretoriofinal5)
+                        else:
+                            print(">>> Vídeo 5 não encontrado para download")
+                    except Exception as e:
+                        print(f">>> Vídeo não disponível para download: {e}")
+                    self.sinalDownload.emit(self.diretoriofinal1 or "", self.diretoriofinal5 or "","")
 
                 self.sinalInfo.emit(self.alerta,self.placa,self.empresa,self.filial,self.motorista)
                 
@@ -225,9 +283,11 @@ class PlayWrightBot(QThread):
 
                 self.sinalPronto.emit()
                 
+                self.contador += 1
+                self.sinalContador.emit(self.contador)
                 # Aguarda um pouco antes de verificar o próximo alerta
                 await asyncio.sleep(1)
-                self.processando_alerta = False  # Libera para próximo alerta
+                  # Libera para próximo alerta
 
             while not self.isInterruptionRequested():
                 await asyncio.sleep(0.1)                      
@@ -241,11 +301,10 @@ class PlayWrightBot(QThread):
         asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self.run_playwright())
 
-    def clickSelecao(self, valor: str, janela_callback=None):
+    def clickSelecao(self, valor: str):
         if self.loop:
             asyncio.run_coroutine_threadsafe(
-                self.selecaoTratativa(valor), self.loop
-            )
+                self.selecaoTratativa(valor), self.loop)
 
     async def coletarTratativas(self):
         try:
@@ -254,7 +313,6 @@ class PlayWrightBot(QThread):
                 state="attached",
                 timeout=10000
             )
-            
             tratativas = await self.pagina.locator(
                 "treatment-step-three select option"
             ).all_inner_texts()
@@ -289,7 +347,6 @@ class PlayWrightBot(QThread):
                     await item.click()
                     print(f">>> Item clicado: {valor}")
                     break
-
 
             match valor:
                 case "Rádio":
@@ -369,34 +426,45 @@ class PlayWrightBot(QThread):
     async def alertaMonitorado(self):
         try:
             await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
+
+            self._video_liberado.clear()
+            self.sinalLiberarVideo.emit()
+            await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
+
             await self.pagina.wait_for_timeout(300)
             await self.pagina.get_by_role("button", name="Concluir").click()
+            await self.pagina.wait_for_timeout(500)
 
-            await self.pagina.mouse.click(400, 10)     
+            await self.pagina.bring_to_front()
+            await self.pagina.wait_for_timeout(500)
+            await self.pagina.mouse.click(400, 10)
+            #await self.pagina.wait_for_timeout(300)
+            #pyautogui.hotkey('Enter')
+            #await self.pagina.wait_for_timeout(500)
+            #pyautogui.hotkey('Enter')
 
             await self.pagina.wait_for_timeout(3000)
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
-            await self.pagina.wait_for_load_state("networkidle", timeout=10000)
+            await self.pagina.wait_for_load_state("networkidle", timeout=5000)
         except Exception as e:
             print(f">>>ERRO {e}")
         finally:
-            self.processando_alerta = False
+            self._tratativa_concluida.set()
         
         print(">>> Tratativa Monitorada")
 
-    
     async def subirVideoZap(self):
         try:
             await self.pagina2.get_by_role("button", name="Anexar").click()
-            await self.pagina2.wait_for_timeout(2000)
+            await self.pagina2.wait_for_timeout(1000)
             await self.pagina2.click('button[aria-label="Fotos e vídeos"]')
-            await self.pagina2.wait_for_timeout(2000)
-            await self.pagina2.locator('input[accept="image/*,video/mp4,video/3gpp,video/quicktime,video/webm,video/x-matroska"]').set_input_files(self.diretoriofinal)
+            await self.pagina2.wait_for_timeout(1000)
+            await self.pagina2.locator('input[accept="image/*,video/mp4,video/3gpp,video/quicktime,video/webm,video/x-matroska"]').set_input_files(self.diretoriofinal1)
             
             # Fecha o seletor de arquivos do Windows com pyautogui
-            await self.pagina2.wait_for_timeout(2000)
+            await self.pagina2.wait_for_timeout(1000)
             pyautogui.hotkey('alt', 'F4')  # fecha a janela nativa
-            await self.pagina2.wait_for_timeout(2000)
+            await self.pagina2.wait_for_timeout(1000)
             
             await self.pagina2.get_by_test_id("media-caption-input-container").get_by_role("paragraph").fill(self.reportOperacao)
             await self.pagina2.wait_for_timeout(500)
@@ -405,16 +473,20 @@ class PlayWrightBot(QThread):
             await self.pagina2.get_by_role("button", name="End icon button").click()
             await self.pagina2.wait_for_timeout(500)
             await self.pagina2.get_by_text("Alerta de Fadiga - África").click()
-            await self.pagina2.wait_for_timeout(100)
+            await self.pagina2.wait_for_timeout(300)
         except Exception as e:
             import traceback
             print(f">>> ERRO subirVideoZap: {e}")
             traceback.print_exc()
         
     async def reportarOperacao(self):
-        
         try:
             await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
+
+            self._video_liberado.clear()
+            self.sinalLiberarVideo.emit()
+            await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
+
             await self.pagina.wait_for_timeout(300)
             self.reportOperacao = await self.pagina.locator('div[style="width: 100%;"]').inner_text()
 
@@ -422,86 +494,103 @@ class PlayWrightBot(QThread):
 
             match self.filial: 
                 case "Distribuição":
+                    await self.pagina2.bring_to_front()
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - distribuição")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_text("Alerta de Fadiga - Distribui").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "Costa Rica" | "Costa Rica Leves":
+                    await self.pagina2.bring_to_front()
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - costa rica")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Cost").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "Alto Taquari":
+                    await self.pagina2.bring_to_front()
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - alto taquari")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Alto").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "Cenibra NE" | "Cenibra BO" | "Cenibra SB Agregados":
+                    await self.pagina2.bring_to_front()
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cenibra")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_text("Alerta de Fadiga - Cenibra").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "Catalão":
+                    await self.pagina2.bring_to_front()
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cmoc")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_text("Alerta de Fadiga - CMOC").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "Químico 1 Felipe" | "Automotivo Fabiano" | "Automotivo Felipe" | "Automotivo Alvaro" | "Químico 2 Fabiano" | "Automotivo Kamilla":
+                    await self.pagina2.bring_to_front()
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - rodoviario")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Rodoviário").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "Transporte de Madeira - Expresso/RS":
+                    await self.pagina2.bring_to_front()
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cmpc")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_text("Alerta de Fadiga - CMPC").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "GRID 1" | "GRID 2" | "GRID 3":
+                    await self.pagina2.bring_to_front()
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - bracell")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_text("Alerta de Fadiga - Bracell").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 
-            await self.pagina.get_by_role("button", name="Concluir").click()
-
+            await self.pagina.bring_to_front()
+            await self.pagina.wait_for_timeout(500)
             await self.pagina.mouse.click(400, 10)
+            await self.pagina.wait_for_timeout(500)
+            await self.pagina.mouse.click(400, 10)
+            #await self.pagina.get_by_role("button", name="Concluir").click()
+            #await self.pagina.mouse.click(400, 10)
+            #await self.pagina.wait_for_timeout(300)
+            #pyautogui.hotkey('Enter')
 
             print(">>> Aguardando tabela atualizar...")
             await self.pagina.wait_for_timeout(3000)
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
-            await self.pagina.wait_for_load_state("networkidle", timeout=10000)
+            await self.pagina.wait_for_load_state("networkidle", timeout=5000)
         except Exception as e:
             print(f">>> ERRO {e}")
         finally:
-            self.processando_alerta = False
+            self._tratativa_concluida.set()
 
     def clickMonitorado(self):
         if self.loop:
-            self.processando_alerta = True
+            
             asyncio.run_coroutine_threadsafe(self.alertaMonitorado(), self.loop)
 
     def clickReportarOperacao(self):
         if self.loop:
-            self.processando_alerta = True
+            
             asyncio.run_coroutine_threadsafe(self.reportarOperacao(), self.loop)
 
     async def invalidarAlerta(self):
         """Invalida o alerta atual voltando e selecionando 'Alerta invalidado'"""
-        if not self.processando_alerta:
-            print("Invalidação ignorada, já processando")
+        if self._tratativa_concluida.is_set():
+            print("Invalidação ignorada, nada sendo processado")
             return
         try:
             print(">>> Iniciando invalidação do alerta")
-            self.processando_alerta = True  # Bloqueia o loop principal
+              # Bloqueia o loop principal
             
+            self._video_liberado.clear()
+            self.sinalLiberarVideo.emit()
+            await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
             # Primeiro clique no botão Voltar
             botao_voltar = self.pagina.get_by_role("button", name="Voltar")
             await botao_voltar.click()
@@ -545,24 +634,17 @@ class PlayWrightBot(QThread):
 
             await self.pagina.get_by_role("button", name="Finalizar").nth(1).click()
             await self.pagina.wait_for_timeout(500)
-            
-            await self.pagina.mouse.click(400, 10)
-            await self.pagina2.wait_for_timeout(500)
 
-            await self.pagina.mouse.click(400, 10)
-            await self.pagina2.wait_for_timeout(500)
+            await self.pagina.bring_to_front()
+            await self.pagina.mouse.click(400,10)
+            await self.pagina.wait_for_timeout(700)
+            await self.pagina.mouse.click(400,10)
+            await self.pagina.wait_for_timeout(700)
             
-            await self.pagina.mouse.click(400, 10)
-            await self.pagina2.wait_for_timeout(500)
-            
-            #await page.mouse.dblclick(10, 10, { delay: 300 });             
             print(">>> Aguardando tabela atualizar...")
-                            
-            print(">>> Aguardando tabela atualizar...")
-   
-
+    
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
-            await self.pagina.wait_for_load_state("networkidle", timeout=10000)           
+            await self.pagina.wait_for_load_state("networkidle", timeout=5000)           
             
             # Emite sinal de tratativa finalizada para apagar o vídeo
             print(">>> Invalidação concluída com sucesso - Vídeo será apagado")
@@ -573,12 +655,11 @@ class PlayWrightBot(QThread):
             traceback.print_exc()
         finally:
             # Sempre libera a flag, mesmo em caso de erro
-            self.processando_alerta = False
+            self._tratativa_concluida.set()
             print(">>> Flag processando_alerta liberada")
 
     def clickInvalidar(self):
         if self.loop:
-            self.processando_alerta = True
             asyncio.run_coroutine_threadsafe(self.invalidarAlerta(), self.loop)
 
 class janelaPrincipal(QMainWindow):
@@ -586,12 +667,11 @@ class janelaPrincipal(QMainWindow):
         super().__init__()
         self.setWindowTitle("Revisão de Vídeo")
         self.video_atual = None
+        self.videos = {}
 
         # Janela mais alta e menos larga: 70% largura, 90% altura
         self.ajustarJanelaAoMonitor(largura_pct=70, altura_pct=90)
-
-        self.iniciarThread()
-
+        
         # ── Widget central ──────────────────────────────────────────────────
         central = QWidget()
         self.setCentralWidget(central)
@@ -609,9 +689,9 @@ class janelaPrincipal(QMainWindow):
         self.painelTabela.setMinimumWidth(260)
         self.painelTabela.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        labelTabela = QLabel("Histórico de Alertas", self.painelTabela)
-        labelTabela.setAlignment(Qt.AlignCenter)
-        labelTabela.setStyleSheet("font-size: 13px;")
+        self.labelTabela = QLabel("Histórico de Alertas", self.painelTabela)
+        self.labelTabela.setAlignment(Qt.AlignCenter)
+        self.labelTabela.setStyleSheet("font-size: 13px;")
 
         self.tabela = QTableWidget(0, 3)
         self.tabela.setHorizontalHeaderLabels(["Tipo Alerta", "Quando", "Tratativa"])
@@ -625,7 +705,7 @@ class janelaPrincipal(QMainWindow):
         self.tabela.setSelectionBehavior(QTableWidget.SelectRows)
 
         self.layoutTabela = QVBoxLayout(self.painelTabela)
-        self.layoutTabela.addWidget(labelTabela)
+        self.layoutTabela.addWidget(self.labelTabela)
         self.layoutTabela.addWidget(self.tabela)
 
         raiz.addWidget(self.painelTabela, stretch=3)
@@ -638,10 +718,28 @@ class janelaPrincipal(QMainWindow):
         layoutCentro.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
         # Status
-        self.status_label = QLabel("Carregando Vídeo...")
-        self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setFont(QFont("Arial", 11, QFont.Bold))
-        layoutCentro.addWidget(self.status_label)
+        self.loadingBar = QProgressBar()
+        self.loadingBar.setFixedHeight(12)  
+        self.loadingBar.setRange(0, 0)  # modo indeterminado = animação infinita
+        self.loadingBar.setTextVisible(False)
+        self.loadingBar.setFixedHeight(4)
+        self.loadingBar.hide()
+        layoutCentro.addWidget(self.loadingBar)
+
+        self.loadingWidget = QLabel("Aguardando alertas...")
+        self.loadingWidget.setAlignment(Qt.AlignCenter)
+        self.loadingWidget.setFont(QFont("Arial", 11))
+        self.loadingWidget.setStyleSheet("color: #888; padding: 8px;")
+        self.loadingWidget.hide()
+        layoutCentro.addWidget(self.loadingWidget)
+
+        # Seletor de vídeos
+        self.seletorVideo = QComboBox()
+        self.seletorVideo.addItem("Câmera 1")
+        self.seletorVideo.addItem("Câmera 2")
+        self.seletorVideo.addItem("Câmera 3")
+        self.seletorVideo.currentTextChanged.connect(self.trocarVideo)
+        layoutCentro.addWidget(self.seletorVideo)
 
         # Vídeo – maior e proporcional
         self.caixaVideo = QVideoWidget()
@@ -661,9 +759,9 @@ class janelaPrincipal(QMainWindow):
         layoutCentro.addWidget(self.labelColunas)
 
         # Controles de reprodução
-        controles = QHBoxLayout()
-        controles.setSpacing(6)
-        controles.setAlignment(Qt.AlignHCenter)
+        self.layoutControles = QHBoxLayout()
+        self.layoutControles.setSpacing(6)
+        self.layoutControles.setAlignment(Qt.AlignHCenter)
 
         fonte_p = QFont("Arial", 9)
         btnPlay  = QPushButton("▶️")
@@ -680,11 +778,11 @@ class janelaPrincipal(QMainWindow):
         btnPlay.clicked.connect(self.player.play)
         btnPause.clicked.connect(self.player.pause)
 
-        controles.addWidget(btnPlay)
-        controles.addWidget(btnPause)
-        controles.addWidget(btnNormalSpeed)
-        controles.addWidget(btnSpeed)
-        layoutCentro.addLayout(controles)
+        self.layoutControles.addWidget(btnPlay)
+        self.layoutControles.addWidget(btnPause)
+        self.layoutControles.addWidget(btnNormalSpeed)
+        self.layoutControles.addWidget(btnSpeed)
+        layoutCentro.addLayout(self.layoutControles)
 
         # Botões Válido / Inválido
         acoes = QHBoxLayout()
@@ -714,7 +812,7 @@ class janelaPrincipal(QMainWindow):
         colDireita = QWidget()
         colDireita.setObjectName("colDireita")
         colDireita.setStyleSheet(
-            "#colDireita { border-left: 1px solid #444; }"
+            "#colDireita { border: 1px dashed #444; border-radius: 6px; }"
         )
         colDireita.setMinimumWidth(300)
         colDireita.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -842,10 +940,18 @@ class janelaPrincipal(QMainWindow):
         layoutR.addWidget(self.operacao)
         layoutDireita.addWidget(self.containerR)
 
+        self.labelContador = QLabel()
+        self.labelContador.setAlignment(Qt.AlignCenter)
+        self.labelContador.setFont(QFont("Arial", 10, QFont.Bold))
+        self.labelContador.setStyleSheet("color: #0088ff; padding: 2px;")
+        layoutDireita.addWidget(self.labelContador)
+
         # Empurra tudo para cima
-        layoutDireita.addStretch()
+        #layoutDireita.addStretch()
 
         raiz.addWidget(colDireita, stretch=3)
+
+        self.iniciarThread()
 
     # ── Métodos de controle ──────────────────────────────────────────────────
 
@@ -858,6 +964,8 @@ class janelaPrincipal(QMainWindow):
         self.bot.sinalVideosCarregados.connect(self.habilitarBotaoInvalidar)
         self.bot.sinalLiberarVideo.connect(self.liberarVideoAtual)
         self.bot.sinalTabela.connect(self.atualizarTabela)
+        self.bot.sinalSemAlertas.connect(self.toggleLoading)
+        self.bot.sinalContador.connect(self.atualizarContador)
         self.bot.start()
 
     def coletarInfo(self, alerta, placa, filial, empresa, motorista):
@@ -890,6 +998,9 @@ class janelaPrincipal(QMainWindow):
         self.labelColunas.setText(f"Alerta já foi visto {quantidade} vezes")
         print(f">>> Label atualizado: {quantidade} alertas monitorados")
 
+    def atualizarContador(self, contador):
+        self.labelContador.setText(f"Alertas tratados hoje: {contador}")
+
     def atualizarTabela(self, linhas, dados):
         print(f'>>> dados: {dados}')
         if hasattr(self, 'noHistoricoLabel'):
@@ -910,26 +1021,43 @@ class janelaPrincipal(QMainWindow):
                 self.tabela.setItem(i, 2, QTableWidgetItem(tratativa))
             print(f">>> Tabela atualizada com {linhas} linhas")
 
-    def downloadConcluido(self, diretorioFinal):
-        self.video_atual = diretorioFinal
-        self.player.setSource(QUrl.fromLocalFile(diretorioFinal))
-        self.player.play()
+    def downloadConcluido(self, video1, video2, video3):
+        self.videos = {
+            "Câmera 1": video1,
+            "Câmera 2": video2,
+            "Câmera 3": video3,
+        }
+        self.trocarVideo(self.seletorVideo.currentText())
+    
+    def trocarVideo(self, nome: str):
+        caminho = self.videos.get(nome)
+        if caminho and os.path.exists(caminho):
+            self.video_atual = caminho
+            self.player.setSource(QUrl.fromLocalFile(caminho))
+            self.player.play()
+
 
     def liberarVideoAtual(self):
         try:
             self.player.stop()
             self.player.setSource(QUrl())
-            if self.video_atual and os.path.exists(self.video_atual):
+            pasta = os.path.join(os.getcwd(), "perfil_edege_bot", "Downloads")
+            if os.path.exists(pasta):
                 import time
-                for tentativa in range(5):
-                    try:
-                        os.remove(self.video_atual)
-                        print(f">>> Vídeo anterior apagado: {self.video_atual}")
-                        break
-                    except PermissionError:
-                        print(f">>> Tentativa {tentativa + 1}/5 falhou, aguardando...")
-                        time.sleep(0.3)
-                self.video_atual = None
+                for arquivo in os.listdir(pasta):
+                    if arquivo.endswith(".mp4"):
+                        caminho = os.path.join(pasta, arquivo)
+                        for tentativa in range(3):
+                            try:
+                                os.remove(caminho)
+                                print(f">>> Vídeo {caminho} apagado")
+                                break
+                            except PermissionError:
+                                print(f">>> Tentativa {tentativa + 1}/3 falhou, aguardando...")
+                                time.sleep(0.3)
+            self.video_atual = None
+            self.videos = {}
+
         except Exception as e:
             print(f">>> ERRO ao liberar vídeo: {e}")
         finally:
@@ -967,7 +1095,7 @@ class janelaPrincipal(QMainWindow):
         elif valor == "Ausência - Solicitar ajuste - Gestão de Equipamentos CCI":
             self.mostrarAusencia()
         if self.bot:
-            self.bot.clickSelecao(valor, janela_callback=self)
+            self.bot.clickSelecao(valor, )
 
     def listarTratativas(self, opcoes: list):
         if self.tratativas is None:
@@ -1004,6 +1132,36 @@ class janelaPrincipal(QMainWindow):
         self.cameraDesajustada.hide()
         self.cameraEscura.hide()
         self.cameraDefeito.hide()
+
+    def toggleLoading(self, sem_alertas: bool):
+        if not self.loadingWidget or not self.caixaVideo:
+            return
+        
+        # Centro
+        self.loadingWidget.setVisible(sem_alertas)
+        self.loadingBar.setVisible(sem_alertas)
+        self.caixaVideo.setVisible(not sem_alertas)
+        self.seletorVideo.setVisible(not sem_alertas)
+        self.labelColunas.setVisible(not sem_alertas)
+        self.btnValido.setVisible(not sem_alertas)
+        self.btnInvalido.setVisible(not sem_alertas)
+        for i in range(self.layoutControles.count()):
+            widget = self.layoutControles.itemAt(i).widget()
+            if widget:
+                widget.setVisible(not sem_alertas)
+
+        # Direita
+        self.infoAlerta.setVisible(not sem_alertas)
+        self.infoPlaca.setVisible(not sem_alertas)
+        self.infoEmpresa.setVisible(not sem_alertas)
+        self.infoFilial.setVisible(not sem_alertas)
+        self.infoMotorista.setVisible(not sem_alertas)
+        self.containerT.setVisible(not sem_alertas)
+        self.containerR.setVisible(not sem_alertas)
+
+        # Esquerda
+        self.tabela.setVisible(not sem_alertas)
+        self.labelTabela.setVisible(not sem_alertas)
 
     def ajustarJanelaAoMonitor(self, largura_pct=70, altura_pct=90):
         """Ajusta o tamanho da janela como percentual da tela disponível."""
