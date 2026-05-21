@@ -1,7 +1,7 @@
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTextEdit, QLineEdit, QComboBox, QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar
+from PySide6.QtWidgets import QApplication, QCompleter, QMainWindow, QMessageBox, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTextEdit, QLineEdit, QComboBox, QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar
 from PySide6.QtMultimedia import QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
-from PySide6.QtCore import QUrl, Qt, QThread, Signal, QRect
+from PySide6.QtCore import QSettings, QStringListModel, QUrl, Qt, QThread, Signal, QRect
 from PySide6.QtGui import QFont, QScreen
 from playwright.async_api import async_playwright
 import sys
@@ -21,6 +21,8 @@ class PlayWrightBot(QThread):
     sinalTabela = Signal(int, list)
     sinalSemAlertas = Signal(bool)
     sinalContador = Signal(int)
+    sinalPedirCodigo = Signal()   # ← avisa a janela que precisa do código
+    sinalLoginOk = Signal()       # ← avisa a janela que o login foi concluído
 
     def __init__(self, url):
         super().__init__()
@@ -32,19 +34,39 @@ class PlayWrightBot(QThread):
         self._video_liberado = asyncio.Event()
         self._tratativa_concluida = asyncio.Event()
         self._tratativa_concluida.set()  # começa liberado
+        self._conta_recebida = asyncio.Event()
+        self.email = ""
+        self.senha = ""
+        self.codigo = ""
+        self._codigo_recebido = asyncio.Event()
+
+    def receberConta(self):
+        self.conta = janelaLogin()
+        self.conta.sinalLogin.connect(self.iniciarConta)
+
+
+    def iniciarConta(self, email, senha, codigo):
+        self.email = email
+        self.senha = senha
+        self.codigo = codigo
+        if self.loop:
+            self.loop.call_soon_threadsafe(self._conta_recebida.set)
+        
+
 
     async def run_playwright(self):
+        await self._conta_recebida.wait()  # Aguarda até que a conta seja recebida
         async with async_playwright() as pw:
             self.navegador = await pw.chromium.launch_persistent_context(
                 user_data_dir="perfil_edge_bot",
                 channel="msedge",
                 headless=False,
                 args=[
-                "--window-position=-3000,0",  # ✅ joga a janela pra fora da tela
+                  # ✅ joga a janela pra fora da tela
                 "--window-size=1280,720"])
 
-            for pagina in self.navegador.pages:
-                await pagina.close()
+            #for pagina in self.navegador.pages:
+             #   await pagina.close()
 
             self.pagina = await self.navegador.new_page()
             self.pagina.set_default_timeout(0)
@@ -93,13 +115,13 @@ class PlayWrightBot(QThread):
                 await self.pagina.wait_for_timeout(300)
                 
                 # Preenche o email
-                await campo_usuario.fill("brunooliveira@expressonepomuceno.com.br")
+                await campo_usuario.fill(self.email)
                 await self.pagina.wait_for_timeout(500)
                 
                 # Campo de senha
                 campo_senha = self.pagina.locator('xpath=//*[@id="__next"]/div[4]/div[2]/div[1]/form/input[2]')
                 await campo_senha.click()
-                await campo_senha.fill("Bruno.2025")
+                await campo_senha.fill(self.senha)
                 await self.pagina.wait_for_timeout(500)
                 
             except Exception as e:
@@ -108,16 +130,30 @@ class PlayWrightBot(QThread):
                 try:
                     campo_usuario = self.pagina.locator('xpath=//*[@id="__next"]/div[4]/div[2]/div[1]/form/input[1]')
                     await campo_usuario.click()
-                    await campo_usuario.press_sequentially("brunooliveira@expressonepomuceno.com.br", delay=50)
+                    await campo_usuario.press_sequentially(self.email, delay=50)
                     
                     campo_senha = self.pagina.locator('xpath=//*[@id="__next"]/div[4]/div[2]/div[1]/form/input[2]')
                     await campo_senha.click()
-                    await campo_senha.press_sequentially("Bruno.2025", delay=50)
+                    await campo_senha.press_sequentially(self.senha, delay=50)
                 except Exception as e2:
                     print(f"Erro no método alternativo: {e2}")
             
             #await self.pagina.pause()
             await self.pagina.get_by_role("button", name="Entrar").click()
+            await self.pagina.wait_for_timeout(1000)
+            #await self.pagina.pause()
+
+            campo_codigo = self.pagina.get_by_role("textbox", name="Código")
+            if await campo_codigo.count() > 0:
+                self.sinalPedirCodigo.emit()             # ← avisa a janela
+                await self._codigo_recebido.wait()       # ← pausa até o usuário digitar
+                await campo_codigo.fill(self.codigo)
+                await self.pagina.get_by_role("button", name="Entrar").click()
+                await self.pagina.wait_for_timeout(1000)
+
+            self.sinalLoginOk.emit()  # ← login concluído, janela pode fechar
+
+
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").click()
             #await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-header/div/div[2]/div/div[3]/p-checkbox/div/div[2]/span").click()
             #await self.pagina.pause()
@@ -323,6 +359,11 @@ class PlayWrightBot(QThread):
 
         except Exception as e:
             print(">>> ERRO coletarTratativas:", e)
+
+    def enviarCodigo(self, codigo: str):
+        self.codigo = codigo
+        if self.loop:
+            self.loop.call_soon_threadsafe(self._codigo_recebido.set)
 
     async def selecaoTratativa(self, valor: str):
         print(">>> selecaoTratativa chamado com:", valor)
@@ -661,6 +702,143 @@ class PlayWrightBot(QThread):
     def clickInvalidar(self):
         if self.loop:
             asyncio.run_coroutine_threadsafe(self.invalidarAlerta(), self.loop)
+
+class janelaLogin(QMainWindow):
+    sinalLogin = Signal(str, str, str)
+    sinalCodigo = Signal(str)
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Login - Revisão de Vídeo")
+        janelaPrincipal.ajustarJanelaAoMonitor(self, largura_pct=30, altura_pct=40)
+
+        self.settings = QSettings("MinhaApp", "RevisaoVideo")
+
+        self.caixaLogin = QWidget()
+        self.setCentralWidget(self.caixaLogin)
+        raiz = QVBoxLayout(self.caixaLogin)
+
+        info = QWidget()
+        layoutInfo = QVBoxLayout(info)
+        layoutInfo.setContentsMargins(14, 40, 14, 10)
+        layoutInfo.setAlignment(Qt.AlignTop | Qt.AlignCenter)
+
+        self.labelConta = QLabel("Entre com sua conta CREARE")
+        self.labelConta.setFont(QFont("Average Sans", 12, QFont.Bold))
+        self.labelConta.setAlignment(Qt.AlignTop | Qt.AlignCenter)
+
+        login = QWidget()
+        layoutLogin = QVBoxLayout(login)
+        layoutLogin.setContentsMargins(14, 10, 10, 10)
+        layoutLogin.setSpacing(20)
+        layoutLogin.setAlignment(Qt.AlignCenter | Qt.AlignTop)
+
+        self.inputEmail = QLineEdit()
+        self.inputEmail.setFixedSize(300, 25)
+        self.inputEmail.setAlignment(Qt.AlignCenter)
+        self.inputEmail.setPlaceholderText("Digite seu email")
+
+        self.inputSenha = QLineEdit()
+        self.inputSenha.setFixedSize(300, 25)
+        self.inputSenha.setAlignment(Qt.AlignCenter)
+        self.inputSenha.setPlaceholderText("Digite sua senha")
+        self.inputSenha.setEchoMode(QLineEdit.Password)
+
+        self.labelCodigo = QLabel("Código de autenticação recebido no email:")
+        self.labelCodigo.setAlignment(Qt.AlignCenter)
+        self.labelCodigo.hide()
+
+        self.inputCodigo = QLineEdit()
+        self.inputCodigo.setFixedSize(300, 25)
+        self.inputCodigo.setAlignment(Qt.AlignCenter)
+        self.inputCodigo.setPlaceholderText("Digite o código de autenticação")
+        self.inputCodigo.hide()
+
+        self.btnEntrar = QPushButton("Entrar")
+        self.btnEntrar.setFixedSize(300, 25)
+        self.btnEntrar.clicked.connect(self.submitLogin)
+
+        layoutInfo.addWidget(self.labelConta)
+        layoutLogin.addWidget(self.inputEmail)
+        layoutLogin.addWidget(self.inputSenha)
+        layoutLogin.addWidget(self.labelCodigo)
+        layoutLogin.addWidget(self.inputCodigo)
+        layoutLogin.addWidget(self.btnEntrar)
+
+        raiz.addWidget(info)
+        raiz.addWidget(login)
+
+        self.configurarAutocomplete()
+        self.carregarUltimoLogin()
+
+    def mostrarCampoCodigo(self):   # ← deve estar aqui, dentro da classe
+        self.labelCodigo.show()
+        self.inputCodigo.show()
+        self.inputCodigo.setEnabled(True)
+        self.btnEntrar.setEnabled(True)
+        self.btnEntrar.setText("Confirmar código")
+        self.btnEntrar.clicked.disconnect()
+        self.btnEntrar.clicked.connect(self.submitCodigo)
+        self.inputCodigo.setFocus()
+
+    def submitCodigo(self):
+        codigo = self.inputCodigo.text().strip()
+        if not codigo:
+            QMessageBox.warning(self, "Erro", "Por favor, digite o código de autenticação.")
+            return
+        # Envia o código para o bot continuar
+        self.sinalCodigo.emit(codigo)
+        self.btnEntrar.setEnabled(True)
+        self.btnEntrar.setText("Aguardando...")
+
+    def submitLogin(self):
+        email = self.inputEmail.text().strip()
+        senha = self.inputSenha.text().strip()
+
+        if not email or not senha:
+            QMessageBox.warning(self, "Erro de Login", "Por favor, preencha email e senha.")
+            return
+
+        self.salvarConta(email, senha)
+        self.sinalLogin.emit(email, senha, "")
+        self.btnEntrar.setEnabled(False)
+        self.btnEntrar.setText("Entrando...")  # feedback visual enquanto aguarda
+    
+    def configurarAutocomplete(self):
+        contas = self.settings.value("contas", {}) or {}
+
+        self.modelo = QStringListModel(list(contas.keys()))
+        self.completer = QCompleter(self.modelo, self)
+        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.completer.setFilterMode(Qt.MatchContains)  # filtra em qualquer parte do email
+        self.inputEmail.setCompleter(self.completer)
+
+        # Ao ativar uma sugestão, preenche a senha automaticamente
+        self.completer.activated.connect(self.preencherSenhaPorEmail)
+        # Ao sair do campo também tenta preencher
+        self.inputEmail.editingFinished.connect(
+            lambda: self.preencherSenhaPorEmail(self.inputEmail.text())
+        )
+
+    def preencherSenhaPorEmail(self, email: str):
+        contas = self.settings.value("contas", {}) or {}
+        if email in contas:
+            self.inputSenha.setText(contas[email])
+
+    def carregarUltimoLogin(self):
+        ultimo = self.settings.value("ultimo_login", "")
+        if ultimo:
+            self.inputEmail.setText(ultimo)
+            self.preencherSenhaPorEmail(ultimo)
+
+    def salvarConta(self, email: str, senha: str):
+        contas = self.settings.value("contas", {}) or {}
+        contas[email] = senha
+        self.settings.setValue("contas", contas)
+        self.settings.setValue("ultimo_login", email)
+
+        # Atualiza o autocomplete com o novo email
+        self.modelo.setStringList(list(contas.keys()))
+
 
 class janelaPrincipal(QMainWindow):
     def __init__(self):
@@ -1187,4 +1365,13 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     janela = janelaPrincipal()
     janela.show()
+
+    janela2 = janelaLogin()
+    janela2.bot = janela.bot  # ← referência para enviarCodigo()
+    janela2.sinalLogin.connect(janela.bot.iniciarConta)
+    janela2.sinalCodigo.connect(janela.bot.enviarCodigo)
+    janela.bot.sinalPedirCodigo.connect(janela2.mostrarCampoCodigo)  # ← mostra campo de código
+    janela.bot.sinalLoginOk.connect(janela2.close)                   # ← fecha só quando logado
+    janela2.show()
+
     sys.exit(app.exec())
