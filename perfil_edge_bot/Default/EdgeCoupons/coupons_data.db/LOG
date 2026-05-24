@@ -1,6 +1,15 @@
-2026/05/21-17:12:58.160 6b88 Reusing MANIFEST C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2026/05/21-17:12:58.161 6b88 Recovering log #13
-2026/05/21-17:12:58.162 6b88 Reusing old log C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000013.log 
-2026/05/21-17:12:58.181 2b3c Level-0 table #17: started
-2026/05/21-17:12:58.185 2b3c Level-0 table #17: 682560 bytes OK
-2026/05/21-17:12:58.188 2b3c Delete type=0 #13
+2026/05/22-17:50:50.912 44d0 Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/05/22-17:50:50.925 44d0 Recovering log #133
+2026/05/22-17:50:50.927 44d0 Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000133.log 
+2026/05/22-17:50:51.460 33b8 Level-0 table #137: started
+2026/05/22-17:50:51.478 33b8 Level-0 table #137: 682560 bytes OK
+2026/05/22-17:50:51.480 33b8 Delete type=0 #133
+2026/05/22-17:50:51.482 3eac Compacting 4@0 + 1@1 files
+2026/05/22-17:50:51.514 3eac Generated table #138@0: 3 keys, 682560 bytes
+2026/05/22-17:50:51.514 3eac Compacted 4@0 + 1@1 files => 682560 bytes
+2026/05/22-17:50:51.517 3eac compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/05/22-17:50:51.518 3eac Delete type=2 #125
+2026/05/22-17:50:51.518 3eac Delete type=2 #128
+2026/05/22-17:50:51.518 3eac Delete type=2 #131
+2026/05/22-17:50:51.518 3eac Delete type=2 #134
+2026/05/22-17:50:51.518 3eac Delete type=2 #137

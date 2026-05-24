@@ -2,16 +2,21 @@ from PySide6.QtWidgets import QApplication, QCompleter, QMainWindow, QMessageBox
 from PySide6.QtMultimedia import QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtCore import QSettings, QStringListModel, QUrl, Qt, QThread, Signal, QRect
-from PySide6.QtGui import QFont, QScreen
+from PySide6.QtGui import QFont, QScreen, QIcon
 from playwright.async_api import async_playwright
 import sys
 import asyncio
 import os
 import pyautogui
 
+def resource_path(relative_path):
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    return os.path.join(os.path.dirname(__file__), relative_path)
+
 #BOT do navegador
 class PlayWrightBot(QThread):
-    sinalInfo = Signal(str,str,str,str,str)
+    sinalInfo = Signal(str,str,str,str,str,str)
     sinalDownload = Signal(str, str, str)
     sinalTratativas = Signal(list)
     sinalPronto = Signal()
@@ -62,7 +67,7 @@ class PlayWrightBot(QThread):
                 channel="msedge",
                 headless=False,
                 args=[
-                  # ✅ joga a janela pra fora da tela
+                "--window-position=-3000,0",# ✅ joga a janela pra fora da tela
                 "--window-size=1280,720"])
 
             #for pagina in self.navegador.pages:
@@ -77,11 +82,6 @@ class PlayWrightBot(QThread):
             await self.pagina.goto(self.url, wait_until="commit", timeout=0)
 
             await self.pagina2.goto("https://web.whatsapp.com/", wait_until="commit", timeout=0)
-
-            botaoNestaJanela = self.pagina2.get_by_role("button", name="Usar nesta janela")
-            
-            if await botaoNestaJanela.count() > 0 :
-                await botaoNestaJanela.click()
 
             await self.pagina.bring_to_front()
             # Aguarda o campo de usuário estar visível
@@ -199,6 +199,34 @@ class PlayWrightBot(QThread):
 
                 self._tratativa_concluida.clear()
                 self.sinalSemAlertas.emit(False)
+                #await self.pagina.pause()
+                '''
+                try:
+                    dataHora = None
+                    try: 
+                        dataHora =  self.pagina.locator('td[ng-reflect-ng-switch="datetime"] span[tooltipclass="diff"]').first()
+                    except:
+                        pass
+                    if not dataHora:
+                        try:
+                            dataHora = self.pagina.locator('span[ng-reflect-tooltip-class="diff"]').first()
+                        except:
+                            pass
+                    if not dataHora:
+                        try:
+                            dataHora = self.pagina.locator('span.ng-star-inserted[placement="auto"]')
+                        except:
+                            pass
+                    if not dataHora:
+                        try:
+                            dataHora = self.pagina.locator('span.ng-star-inserted', has_text="/2026")
+                        except:
+                            pass
+                except Exception as e:
+                    print(f"Erro ao localizar dataHora: {e}")'''
+
+                self.dataHora = await self.pagina.locator('td[ng-reflect-ng-switch="datetime"] span[tooltipclass="diff"]').first.inner_text()
+
                 await tratativa.click()
                 
                 self.alerta = await self.pagina.locator("step-infos label:has-text('Tipo de Alerta') + p-dropdown label.ui-dropdown-label").inner_text()
@@ -211,7 +239,7 @@ class PlayWrightBot(QThread):
 
                 self.motorista = await self.pagina.locator("step-infos label:has-text('Motorista') + p").inner_text()
 
-                print(self.alerta, self.placa, self.empresa, self.filial, self.motorista)
+                print(self.alerta, self.placa, self.empresa, self.filial, self.motorista, self.dataHora)
 
                 #Download do vídeo - usa .first para pegar o primeiro elemento quando há múltiplos
                 await self.pagina.locator(".playMovie").first.dblclick()
@@ -276,7 +304,7 @@ class PlayWrightBot(QThread):
                         print(f">>> Vídeo não disponível para download: {e}")
                     self.sinalDownload.emit(self.diretoriofinal1 or "", self.diretoriofinal5 or "","")
 
-                self.sinalInfo.emit(self.alerta,self.placa,self.empresa,self.filial,self.motorista)
+                self.sinalInfo.emit(self.alerta,self.placa,self.empresa,self.filial,self.motorista, self.dataHora)
                 
                 await self.pagina.mouse.click(400, 10)
 
@@ -472,13 +500,19 @@ class PlayWrightBot(QThread):
             self.sinalLiberarVideo.emit()
             await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
 
-            await self.pagina.wait_for_timeout(300)
-            await self.pagina.get_by_role("button", name="Concluir").click()
             await self.pagina.wait_for_timeout(500)
+            await self.pagina.mouse.click(400, 10)
+            #await self.pagina.wait_for_timeout(500)
+            #await self.pagina.get_by_role("button", name="Concluir").click()
+            #await self.pagina.wait_for_timeout(500)
 
             await self.pagina.bring_to_front()
             await self.pagina.wait_for_timeout(500)
             await self.pagina.mouse.click(400, 10)
+            await self.pagina.wait_for_timeout(500)
+            botaoConcluir = self.pagina.get_by_role("button", name="Concluir")
+            if await botaoConcluir.count() > 0 :
+                await botaoConcluir.click()
             #await self.pagina.wait_for_timeout(300)
             #pyautogui.hotkey('Enter')
             #await self.pagina.wait_for_timeout(500)
@@ -496,25 +530,25 @@ class PlayWrightBot(QThread):
 
     async def subirVideoZap(self):
         try:
+            await self.pagina2.bring_to_front()
+            await self.pagina2.wait_for_timeout(500)
             await self.pagina2.get_by_role("button", name="Anexar").click()
             await self.pagina2.wait_for_timeout(1000)
-            await self.pagina2.click('button[aria-label="Fotos e vídeos"]')
-            await self.pagina2.wait_for_timeout(1000)
-            await self.pagina2.locator('input[accept="image/*,video/mp4,video/3gpp,video/quicktime,video/webm,video/x-matroska"]').set_input_files(self.diretoriofinal1)
+            async with self.pagina2.expect_file_chooser() as fc_info:
+                await self.pagina2.click('button[aria-label="Fotos e vídeos"]')
             
-            # Fecha o seletor de arquivos do Windows com pyautogui
-            await self.pagina2.wait_for_timeout(1000)
-            pyautogui.hotkey('alt', 'F4')  # fecha a janela nativa
-            await self.pagina2.wait_for_timeout(1000)
-            
+            file_chooser = await fc_info.value
+            await file_chooser.set_files(self.diretoriofinal1)
+
+            await self.pagina2.wait_for_timeout(1000)            
             await self.pagina2.get_by_test_id("media-caption-input-container").get_by_role("paragraph").fill(self.reportOperacao)
             await self.pagina2.wait_for_timeout(500)
             await self.pagina2.get_by_role("button", name="Enviar 1 item selecionado").click()
-            await self.pagina2.wait_for_timeout(1000)
+            await self.pagina2.wait_for_timeout(2000)
             await self.pagina2.get_by_role("button", name="End icon button").click()
-            await self.pagina2.wait_for_timeout(500)
+            await self.pagina2.wait_for_timeout(1000)
             await self.pagina2.get_by_text("Alerta de Fadiga - África").click()
-            await self.pagina2.wait_for_timeout(300)
+            await self.pagina2.wait_for_timeout(1000)
         except Exception as e:
             import traceback
             print(f">>> ERRO subirVideoZap: {e}")
@@ -532,6 +566,11 @@ class PlayWrightBot(QThread):
             self.reportOperacao = await self.pagina.locator('div[style="width: 100%;"]').inner_text()
 
             print(self.reportOperacao)
+
+            botaoNestaJanela = self.pagina2.get_by_role("button", name="Usar nesta janela")
+            await self.pagina2.bring_to_front()
+            if await botaoNestaJanela.count() > 0 :
+                await botaoNestaJanela.click()
 
             match self.filial: 
                 case "Distribuição":
@@ -681,6 +720,8 @@ class PlayWrightBot(QThread):
             await self.pagina.wait_for_timeout(700)
             await self.pagina.mouse.click(400,10)
             await self.pagina.wait_for_timeout(700)
+            await self.pagina.mouse.click(400,10)
+            await self.pagina.wait_for_timeout(700)
             
             print(">>> Aguardando tabela atualizar...")
     
@@ -708,7 +749,8 @@ class janelaLogin(QMainWindow):
     sinalCodigo = Signal(str)
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Login - Revisão de Vídeo")
+        self.setWindowTitle("Login - BotCreare")
+        self.setWindowIcon(QIcon(resource_path("icone_creare.ico")))
         janelaPrincipal.ajustarJanelaAoMonitor(self, largura_pct=30, altura_pct=40)
 
         self.settings = QSettings("MinhaApp", "RevisaoVideo")
@@ -843,7 +885,8 @@ class janelaLogin(QMainWindow):
 class janelaPrincipal(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Revisão de Vídeo")
+        self.setWindowTitle("BotCreare")
+        self.setWindowIcon(QIcon(resource_path("icone_creare.ico")))
         self.video_atual = None
         self.videos = {}
 
@@ -987,15 +1030,15 @@ class janelaPrincipal(QMainWindow):
         raiz.addWidget(colCentro, stretch=4)
 
         # ── COLUNA DIREITA  (informações + tratativa + report) ───────────────
-        colDireita = QWidget()
-        colDireita.setObjectName("colDireita")
-        colDireita.setStyleSheet(
+        self.colunaDireita = QWidget()
+        self.colunaDireita.setObjectName("colDireita")
+        self.colunaDireita.setStyleSheet(
             "#colDireita { border: 1px dashed #444; border-radius: 6px; }"
         )
-        colDireita.setMinimumWidth(300)
-        colDireita.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.colunaDireita.setMinimumWidth(300)
+        self.colunaDireita.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
-        layoutDireita = QVBoxLayout(colDireita)
+        layoutDireita = QVBoxLayout(self.colunaDireita)
         layoutDireita.setContentsMargins(14, 10, 10, 10)
         layoutDireita.setSpacing(10)
         layoutDireita.setAlignment(Qt.AlignTop)
@@ -1036,6 +1079,12 @@ class janelaPrincipal(QMainWindow):
         self.infoMotorista.setFont(fonte_info)
         self.infoMotorista.setWordWrap(True)
         layoutDireita.addWidget(self.infoMotorista)
+
+        self.infoDataHora = QLabel()
+        self.infoDataHora.setAlignment(Qt.AlignCenter)
+        self.infoDataHora.setFont(fonte_info)
+        self.infoDataHora.setWordWrap(True)
+        layoutDireita.addWidget(self.infoDataHora)
 
         # Separador visual
         separador = QLabel()
@@ -1127,7 +1176,7 @@ class janelaPrincipal(QMainWindow):
         # Empurra tudo para cima
         #layoutDireita.addStretch()
 
-        raiz.addWidget(colDireita, stretch=3)
+        raiz.addWidget(self.colunaDireita, stretch=3)
 
         self.iniciarThread()
 
@@ -1146,12 +1195,13 @@ class janelaPrincipal(QMainWindow):
         self.bot.sinalContador.connect(self.atualizarContador)
         self.bot.start()
 
-    def coletarInfo(self, alerta, placa, filial, empresa, motorista):
+    def coletarInfo(self, alerta, placa, filial, empresa, motorista, dataHora):
         self.infoAlerta.setText(alerta)
         self.infoPlaca.setText(placa)
         self.infoFilial.setText(filial)
         self.infoEmpresa.setText(empresa)
         self.infoMotorista.setText(motorista)
+        self.infoDataHora.setText(f'Data do ocorrido: {dataHora}')
 
         self.btnValido.setEnabled(False)
         self.btnInvalido.setEnabled(False)
@@ -1164,7 +1214,6 @@ class janelaPrincipal(QMainWindow):
         # Oculta seções de tratativa/report ao carregar novo alerta
         self.containerT.hide()
         self.containerR.hide()
-
         self.pedirTratativas()
 
     def habilitarBotaoInvalidar(self):
@@ -1213,7 +1262,6 @@ class janelaPrincipal(QMainWindow):
             self.video_atual = caminho
             self.player.setSource(QUrl.fromLocalFile(caminho))
             self.player.play()
-
 
     def liberarVideoAtual(self):
         try:
@@ -1314,7 +1362,6 @@ class janelaPrincipal(QMainWindow):
     def toggleLoading(self, sem_alertas: bool):
         if not self.loadingWidget or not self.caixaVideo:
             return
-        
         # Centro
         self.loadingWidget.setVisible(sem_alertas)
         self.loadingBar.setVisible(sem_alertas)
@@ -1329,17 +1376,10 @@ class janelaPrincipal(QMainWindow):
                 widget.setVisible(not sem_alertas)
 
         # Direita
-        self.infoAlerta.setVisible(not sem_alertas)
-        self.infoPlaca.setVisible(not sem_alertas)
-        self.infoEmpresa.setVisible(not sem_alertas)
-        self.infoFilial.setVisible(not sem_alertas)
-        self.infoMotorista.setVisible(not sem_alertas)
-        self.containerT.setVisible(not sem_alertas)
-        self.containerR.setVisible(not sem_alertas)
+        self.colunaDireita.setVisible(not sem_alertas)
 
         # Esquerda
-        self.tabela.setVisible(not sem_alertas)
-        self.labelTabela.setVisible(not sem_alertas)
+        self.painelTabela.setVisible(not sem_alertas)
 
     def ajustarJanelaAoMonitor(self, largura_pct=70, altura_pct=90):
         """Ajusta o tamanho da janela como percentual da tela disponível."""
