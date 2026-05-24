@@ -1,6 +1,24 @@
-2026/05/22-17:50:47.184 2188 Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\Local Storage\leveldb/MANIFEST-000001
-2026/05/22-17:50:47.210 2188 Recovering log #80
-2026/05/22-17:50:47.215 2188 Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\Local Storage\leveldb/000080.log 
-2026/05/22-17:52:44.818 2188 Level-0 table #85: started
-2026/05/22-17:52:44.835 2188 Level-0 table #85: 22778 bytes OK
-2026/05/22-17:52:44.841 2188 Delete type=0 #80
+2026/05/24-17:07:21.889 21ec Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\Local Storage\leveldb/MANIFEST-000001
+2026/05/24-17:07:21.939 21ec Recovering log #197
+2026/05/24-17:07:21.954 21ec Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\Local Storage\leveldb/000197.log 
+2026/05/24-17:12:24.865 d28 Level-0 table #201: started
+2026/05/24-17:12:24.886 d28 Level-0 table #201: 31611 bytes OK
+2026/05/24-17:12:24.894 d28 Delete type=0 #197
+2026/05/24-17:18:12.078 d28 Level-0 table #203: started
+2026/05/24-17:18:12.115 d28 Level-0 table #203: 36185 bytes OK
+2026/05/24-17:18:12.121 d28 Delete type=0 #200
+2026/05/24-17:18:12.126 21ec Compacting 4@0 + 1@1 files
+2026/05/24-17:18:12.190 21ec Generated table #204@0: 1649 keys, 62679 bytes
+2026/05/24-17:18:12.190 21ec Compacted 4@0 + 1@1 files => 62679 bytes
+2026/05/24-17:18:12.192 21ec compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/05/24-17:18:12.197 21ec Delete type=2 #194
+2026/05/24-17:18:12.198 21ec Delete type=2 #196
+2026/05/24-17:18:12.198 21ec Delete type=2 #198
+2026/05/24-17:18:12.199 21ec Delete type=2 #201
+2026/05/24-17:18:12.199 21ec Delete type=2 #203
+2026/05/24-17:25:36.444 21ec Level-0 table #206: started
+2026/05/24-17:25:36.525 21ec Level-0 table #206: 40952 bytes OK
+2026/05/24-17:25:36.538 21ec Delete type=0 #202
+2026/05/24-17:33:12.063 d28 Level-0 table #208: started
+2026/05/24-17:33:12.075 d28 Level-0 table #208: 38551 bytes OK
+2026/05/24-17:33:12.077 d28 Delete type=0 #205

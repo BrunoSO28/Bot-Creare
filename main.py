@@ -28,6 +28,7 @@ class PlayWrightBot(QThread):
     sinalContador = Signal(int)
     sinalPedirCodigo = Signal()   # ← avisa a janela que precisa do código
     sinalLoginOk = Signal()       # ← avisa a janela que o login foi concluído
+    sinalSessaoExpirada = Signal()
 
     def __init__(self, url):
         super().__init__()
@@ -54,10 +55,51 @@ class PlayWrightBot(QThread):
         self.email = email
         self.senha = senha
         self.codigo = codigo
+        self._codigo_recebido.clear()
         if self.loop:
             self.loop.call_soon_threadsafe(self._conta_recebida.set)
-        
 
+    async def verificarSessao(self):
+        try:
+            campo = self.pagina.get_by_placeholder("Usuário")
+            return await campo.count() > 0
+        except:
+            return False
+    
+    async def _relogarSeNecessario(self) -> bool:
+        """Retorna True se precisou relogar, False se sessão ainda válida."""
+        if not await self.verificarSessao():
+            return False  # sessão ok
+
+        print(">>> Sessão expirada detectada, iniciando relogin...")
+        self._conta_recebida.clear()
+        self.sinalSessaoExpirada.emit()
+        await self._conta_recebida.wait()
+
+        try:
+            await self.pagina.get_by_placeholder("Usuário").fill(self.email)
+            campo_senha = self.pagina.locator(
+                'xpath=//*[@id="__next"]/div[4]/div[2]/div[1]/form/input[2]'
+            )
+            await campo_senha.fill(self.senha)
+            await self.pagina.get_by_role("button", name="Entrar").click()
+            await self.pagina.wait_for_timeout(1000)
+
+            campo_codigo = self.pagina.get_by_role("textbox", name="Código")
+            if await campo_codigo.count() > 0:
+                self.sinalPedirCodigo.emit()
+                await self._codigo_recebido.wait()
+                await campo_codigo.fill(self.codigo)
+                await self.pagina.get_by_role("button", name="Entrar").click()
+                await self.pagina.wait_for_timeout(1000)
+
+            self.sinalLoginOk.emit()
+            print(">>> Relogin concluído")
+            return True
+
+        except Exception as e:
+            print(f">>> ERRO durante relogin: {e}")
+            return True  # mesmo com erro, sinaliza que tentou relogar
 
     async def run_playwright(self):
         await self._conta_recebida.wait()  # Aguarda até que a conta seja recebida
@@ -67,7 +109,7 @@ class PlayWrightBot(QThread):
                 channel="msedge",
                 headless=False,
                 args=[
-                "--window-position=-3000,0",# ✅ joga a janela pra fora da tela
+                "--window-position=-3000,0", #✅ joga a janela pra fora da tela
                 "--window-size=1280,720"])
 
             #for pagina in self.navegador.pages:
@@ -88,7 +130,7 @@ class PlayWrightBot(QThread):
             try:
                 # Tenta múltiplas formas de localizar o campo de usuário
                 campo_usuario = None
-                
+
                 # Método 1: Por placeholder ou label
                 try:
                     campo_usuario = self.pagina.get_by_placeholder("Usuário")
@@ -160,204 +202,211 @@ class PlayWrightBot(QThread):
 
             #Coletar informações do Alerta
             while not self.isInterruptionRequested():
-                await self._tratativa_concluida.wait()
                 try:
-                    await self.pagina.wait_for_selector(
-                        'xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button',
-                        state="detached",  # ← espera o elemento ser removido do DOM
-                        timeout=3000
-                    )
-                    print(">>> Alerta removido da tela")
-                except:
-                    pass  # se não remover em 10s, continua mesmo assim                               
-                try:
-                    tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button')
-                except:
-                    pass
-                if not tratativa:
+                    await self._tratativa_concluida.wait()
+                    if await self._relogarSeNecessario():
+                        continue
                     try:
-                        tratativa = self.pagina.get_by_role("button", name="Inserir Tratativa")
+                        await self.pagina.wait_for_selector(
+                            'xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button',
+                            state="detached",  # ← espera o elemento ser removido do DOM
+                            timeout=3000
+                        )
+                        print(">>> Alerta removido da tela")
+                    except:
+                        pass  # se não remover em 10s, continua mesmo assim                               
+                    try:
+                        tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button')
                     except:
                         pass
-                if not tratativa:
-                    tratativa = self.pagina.locator('button[ng-reflect-ngb-tooltip="Inserir Tratativa"]')
-                
-                quantidade = await tratativa.count()
-                print(f">>> Quantidade de alertas: {quantidade}")  
-                if quantidade == 0:
-                    self.sinalSemAlertas.emit(True)
-                    print(">>> Sem alertas, aguardando...")
-                    await asyncio.sleep(5)
-                    continue
-                
-                habilitado = await tratativa.is_enabled()
-                print(f">>> Alerta habilitado: {habilitado}")
-                
-                if not habilitado:
-                    await asyncio.sleep(2)
-                    continue
+                    if not tratativa:
+                        try:
+                            tratativa = self.pagina.get_by_role("button", name="Inserir Tratativa")
+                        except:
+                            pass
+                    if not tratativa:
+                        tratativa = self.pagina.locator('button[ng-reflect-ngb-tooltip="Inserir Tratativa"]')
+                    
+                    quantidade = await tratativa.count()
+                    print(f">>> Quantidade de alertas: {quantidade}")  
+                    if quantidade == 0:
+                        self.sinalSemAlertas.emit(True)
+                        print(">>> Sem alertas, aguardando...")
+                        await asyncio.sleep(5)
+                        continue
+                    
+                    habilitado = await tratativa.is_enabled()
+                    print(f">>> Alerta habilitado: {habilitado}")
+                    
+                    if not habilitado:
+                        await asyncio.sleep(2)
+                        continue
 
-                self._tratativa_concluida.clear()
-                self.sinalSemAlertas.emit(False)
-                #await self.pagina.pause()
-                '''
-                try:
-                    dataHora = None
-                    try: 
-                        dataHora =  self.pagina.locator('td[ng-reflect-ng-switch="datetime"] span[tooltipclass="diff"]').first()
-                    except:
-                        pass
-                    if not dataHora:
-                        try:
-                            dataHora = self.pagina.locator('span[ng-reflect-tooltip-class="diff"]').first()
+                    self._tratativa_concluida.clear()
+                    self.sinalSemAlertas.emit(False)
+                    #await self.pagina.pause()
+                    '''
+                    try:
+                        dataHora = None
+                        try: 
+                            dataHora =  self.pagina.locator('td[ng-reflect-ng-switch="datetime"] span[tooltipclass="diff"]').first()
                         except:
                             pass
-                    if not dataHora:
+                        if not dataHora:
+                            try:
+                                dataHora = self.pagina.locator('span[ng-reflect-tooltip-class="diff"]').first()
+                            except:
+                                pass
+                        if not dataHora:
+                            try:
+                                dataHora = self.pagina.locator('span.ng-star-inserted[placement="auto"]')
+                            except:
+                                pass
+                        if not dataHora:
+                            try:
+                                dataHora = self.pagina.locator('span.ng-star-inserted', has_text="/2026")
+                            except:
+                                pass
+                    except Exception as e:
+                        print(f"Erro ao localizar dataHora: {e}")'''
+
+                    self.dataHora = await self.pagina.locator('td[ng-reflect-ng-switch="datetime"] span[tooltipclass="diff"]').first.inner_text()
+
+                    await tratativa.click()
+                    
+                    self.alerta = await self.pagina.locator("step-infos label:has-text('Tipo de Alerta') + p-dropdown label.ui-dropdown-label").inner_text()
+
+                    self.placa = await self.pagina.locator("step-infos label:has-text('Placa / Prefixo') + p").inner_text()
+
+                    self.empresa = await self.pagina.locator("step-infos label:has-text('Empresa') + p").inner_text()
+
+                    self.filial = await self.pagina.locator("step-infos label:has-text('Filial') + p").inner_text()
+
+                    self.motorista = await self.pagina.locator("step-infos label:has-text('Motorista') + p").inner_text()
+
+                    print(self.alerta, self.placa, self.empresa, self.filial, self.motorista, self.dataHora)
+
+                    #Download do vídeo - usa .first para pegar o primeiro elemento quando há múltiplos
+                    await self.pagina.locator(".playMovie").first.dblclick()
+                    await self.pagina.wait_for_timeout(1000)
+
+                    video1 = self.pagina.locator("xpath=/html/body/dinamic-dialog/div/div/ng-component/div/ul/li[1]/div/div/app-download-button/button/i")
+
+                    video2 = self.pagina.locator("li:nth-child(2) > .video-wrapper > .download-container > app-download-button > .download-button")
+
+                    video5 = self.pagina.locator("li:nth-child(5) > .video-wrapper > .download-container > app-download-button > .download-button")
+
+                    self.diretoriofinal1 = ""
+                    self.diretoriofinal2 = ""
+                    self.diretoriofinal5 = ""
+
+                    if self.alerta == "Risco de colisão" or self.alerta == "Pedestre":
                         try:
-                            dataHora = self.pagina.locator('span.ng-star-inserted[placement="auto"]')
-                        except:
-                            pass
-                    if not dataHora:
+                            if await video2.count() > 0:
+                                async with self.pagina.expect_download() as downloadVideo2:
+                                    diretorio = os.getcwd()
+                                    await video2.click()
+                                    download2 = await downloadVideo2.value
+
+                                    self.diretoriofinal2 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera2.mp4")
+
+                                    await download2.save_as(self.diretoriofinal2)
+                                    
+                            else:
+                                print(">>> Vídeo 2 não encontrado para download")
+                        except Exception as e:
+                            print(f">>> Vídeo não disponível para download: {e}")
+                        self.sinalDownload.emit(self.diretoriofinal2,"","")
+                    else:
                         try:
-                            dataHora = self.pagina.locator('span.ng-star-inserted', has_text="/2026")
-                        except:
-                            pass
+                            if await video1.count() > 0:
+                                async with self.pagina.expect_download() as downloadVideo1:
+                                    diretorio = os.getcwd()
+                                    await video1.click()
+                                    download1 = await downloadVideo1.value
+
+                                    self.diretoriofinal1 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera1.mp4")
+
+                                    await download1.save_as(self.diretoriofinal1)
+                            else:
+                                print(">>> Vídeo 1 não encontrado para download")
+                        except Exception as e:
+                            print(f">>> Vídeo não disponível para download: {e}")
+        
+                        try:                
+                            if await video5.count() > 0:
+                                async with self.pagina.expect_download() as downloadVideo5:
+                                    diretorio = os.getcwd()
+                                    await video5.click()
+                                    download5 = await downloadVideo5.value
+
+                                    self.diretoriofinal5 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera5.mp4")
+
+                                    await download5.save_as(self.diretoriofinal5)
+                            else:
+                                print(">>> Vídeo 5 não encontrado para download")
+                        except Exception as e:
+                            print(f">>> Vídeo não disponível para download: {e}")
+                        self.sinalDownload.emit(self.diretoriofinal1 or "", self.diretoriofinal5 or "","")
+
+                    self.sinalInfo.emit(self.alerta,self.placa,self.empresa,self.filial,self.motorista, self.dataHora)
+                    
+                    await self.pagina.mouse.click(400, 10)
+
+                    # Coleta os vídeos do alerta e clica em cada um
+                    videosAlerta = self.pagina.locator('ul[style="margin-bottom: 20px;"] li#itemToHistory')
+                    total = await videosAlerta.count()  # Adiciona await aqui
+                    print(f">>> Total de vídeos do alerta: {total}")
+                    
+                    for i in range(total):
+                        await videosAlerta.nth(i).click()  # Adiciona await aqui também
+                        await self.pagina.wait_for_timeout(300)  # Aguarda um pouco entre os cliques
+                    
+                    print(f">>> Todos os {total} vídeos foram selecionados")
+                    self.sinalVideosCarregados.emit()  # Emite sinal indicando que todos os vídeos foram carregados
+                    
+                    # Conta as linhas da tabela
+                    self.colunas = await self.pagina.locator('table:has(th:text("Tipo Alerta")) tbody tr').count()
+                    print(f">>> Quantidade de colunas: {self.colunas}")
+                    self.sinalColunas.emit(self.colunas)  # Emite o sinal com a quantidade de colunas
+
+                    self.tabelaHistorico = self.pagina.locator('table.alarm-history tbody tr.ng-star-inserted')
+                    self.total = await self.tabelaHistorico.count()
+                    print(f'>>> Total: {self.total}')
+
+                    dados_tabela = []
+                    for i in range(self.total):
+                        self.linha = self.tabelaHistorico.nth(i)
+                        self.col1 = await self.linha.locator("td:nth-child(1) span").inner_text()
+                        self.col2 = await self.linha.locator("td:nth-child(2)").inner_text()
+                        self.col3 = await self.linha.locator("td:nth-child(3)").inner_text()
+                        dados_tabela.append((self.col1, self.col2, self.col3))
+                        print(f'col1: {self.col1} - col2: {self.col2} - col3: {self.col3}')
+
+                    self.sinalTabela.emit(self.total, dados_tabela)
+
+                    await self.pagina.get_by_role("button", name="Aplicar gestão").click()
+                    await self.pagina.wait_for_timeout(500)
+                    await self.pagina.get_by_role("button", name="Aplicar gestão").click()
+                    #await self.pagina.pause()
+
+                    self.sinalPronto.emit()
+                    
+                    self.contador += 1
+                    self.sinalContador.emit(self.contador)
+                    # Aguarda um pouco antes de verificar o próximo alerta
+                    await asyncio.sleep(1)
+                    # Libera para próximo alerta
                 except Exception as e:
-                    print(f"Erro ao localizar dataHora: {e}")'''
-
-                self.dataHora = await self.pagina.locator('td[ng-reflect-ng-switch="datetime"] span[tooltipclass="diff"]').first.inner_text()
-
-                await tratativa.click()
-                
-                self.alerta = await self.pagina.locator("step-infos label:has-text('Tipo de Alerta') + p-dropdown label.ui-dropdown-label").inner_text()
-
-                self.placa = await self.pagina.locator("step-infos label:has-text('Placa / Prefixo') + p").inner_text()
-
-                self.empresa = await self.pagina.locator("step-infos label:has-text('Empresa') + p").inner_text()
-
-                self.filial = await self.pagina.locator("step-infos label:has-text('Filial') + p").inner_text()
-
-                self.motorista = await self.pagina.locator("step-infos label:has-text('Motorista') + p").inner_text()
-
-                print(self.alerta, self.placa, self.empresa, self.filial, self.motorista, self.dataHora)
-
-                #Download do vídeo - usa .first para pegar o primeiro elemento quando há múltiplos
-                await self.pagina.locator(".playMovie").first.dblclick()
-                await self.pagina.wait_for_timeout(1000)
-
-                video1 = self.pagina.locator("xpath=/html/body/dinamic-dialog/div/div/ng-component/div/ul/li[1]/div/div/app-download-button/button/i")
-
-                video2 = self.pagina.locator("li:nth-child(2) > .video-wrapper > .download-container > app-download-button > .download-button")
-
-                video5 = self.pagina.locator("li:nth-child(5) > .video-wrapper > .download-container > app-download-button > .download-button")
-
-                self.diretoriofinal1 = ""
-                self.diretoriofinal2 = ""
-                self.diretoriofinal5 = ""
-
-                if self.alerta == "Risco de colisão" or self.alerta == "Pedestre":
-                    try:
-                        if await video2.count() > 0:
-                            async with self.pagina.expect_download() as downloadVideo2:
-                                diretorio = os.getcwd()
-                                await video2.click()
-                                download2 = await downloadVideo2.value
-
-                                self.diretoriofinal2 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera2.mp4")
-
-                                await download2.save_as(self.diretoriofinal2)
-                                
-                        else:
-                            print(">>> Vídeo 2 não encontrado para download")
-                    except Exception as e:
-                        print(f">>> Vídeo não disponível para download: {e}")
-                    self.sinalDownload.emit(self.diretoriofinal2,"","")
-                else:
-                    try:
-                        if await video1.count() > 0:
-                            async with self.pagina.expect_download() as downloadVideo1:
-                                diretorio = os.getcwd()
-                                await video1.click()
-                                download1 = await downloadVideo1.value
-
-                                self.diretoriofinal1 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera1.mp4")
-
-                                await download1.save_as(self.diretoriofinal1)
-                        else:
-                            print(">>> Vídeo 1 não encontrado para download")
-                    except Exception as e:
-                        print(f">>> Vídeo não disponível para download: {e}")
-    
-                    try:                
-                        if await video5.count() > 0:
-                            async with self.pagina.expect_download() as downloadVideo5:
-                                diretorio = os.getcwd()
-                                await video5.click()
-                                download5 = await downloadVideo5.value
-
-                                self.diretoriofinal5 = os.path.join(diretorio, "perfil_edge_bot\\Downloads\\Camera5.mp4")
-
-                                await download5.save_as(self.diretoriofinal5)
-                        else:
-                            print(">>> Vídeo 5 não encontrado para download")
-                    except Exception as e:
-                        print(f">>> Vídeo não disponível para download: {e}")
-                    self.sinalDownload.emit(self.diretoriofinal1 or "", self.diretoriofinal5 or "","")
-
-                self.sinalInfo.emit(self.alerta,self.placa,self.empresa,self.filial,self.motorista, self.dataHora)
-                
-                await self.pagina.mouse.click(400, 10)
-
-                # Coleta os vídeos do alerta e clica em cada um
-                videosAlerta = self.pagina.locator('ul[style="margin-bottom: 20px;"] li#itemToHistory')
-                total = await videosAlerta.count()  # Adiciona await aqui
-                print(f">>> Total de vídeos do alerta: {total}")
-                
-                for i in range(total):
-                    await videosAlerta.nth(i).click()  # Adiciona await aqui também
-                    await self.pagina.wait_for_timeout(300)  # Aguarda um pouco entre os cliques
-                
-                print(f">>> Todos os {total} vídeos foram selecionados")
-                self.sinalVideosCarregados.emit()  # Emite sinal indicando que todos os vídeos foram carregados
-                
-                # Conta as linhas da tabela
-                self.colunas = await self.pagina.locator('table:has(th:text("Tipo Alerta")) tbody tr').count()
-                print(f">>> Quantidade de colunas: {self.colunas}")
-                self.sinalColunas.emit(self.colunas)  # Emite o sinal com a quantidade de colunas
-
-                self.tabelaHistorico = self.pagina.locator('table.alarm-history tbody tr.ng-star-inserted')
-                self.total = await self.tabelaHistorico.count()
-                print(f'>>> Total: {self.total}')
-
-                dados_tabela = []
-                for i in range(self.total):
-                    self.linha = self.tabelaHistorico.nth(i)
-                    self.col1 = await self.linha.locator("td:nth-child(1) span").inner_text()
-                    self.col2 = await self.linha.locator("td:nth-child(2)").inner_text()
-                    self.col3 = await self.linha.locator("td:nth-child(3)").inner_text()
-                    dados_tabela.append((self.col1, self.col2, self.col3))
-                    print(f'col1: {self.col1} - col2: {self.col2} - col3: {self.col3}')
-
-                self.sinalTabela.emit(self.total, dados_tabela)
-
-                await self.pagina.get_by_role("button", name="Aplicar gestão").click()
-                await self.pagina.wait_for_timeout(500)
-                await self.pagina.get_by_role("button", name="Aplicar gestão").click()
-                #await self.pagina.pause()
-
-                self.sinalPronto.emit()
-                
-                self.contador += 1
-                self.sinalContador.emit(self.contador)
-                # Aguarda um pouco antes de verificar o próximo alerta
-                await asyncio.sleep(1)
-                  # Libera para próximo alerta
-
+                    print(f">>> ERRO no loop principal: {e}")
+                    self._tratativa_concluida.set()  # nunca trava o loop
+                    await asyncio.sleep(2)
             while not self.isInterruptionRequested():
                 await asyncio.sleep(0.1)                      
- 
+
             await self.pagina.wait_for_timeout(10000)
             await self.navegador.close()
+        
 
     #Rodando o navegador em segundo plano        
     def run(self):
@@ -494,8 +543,11 @@ class PlayWrightBot(QThread):
             )
     async def alertaMonitorado(self):
         try:
+            if await self._relogarSeNecessario():
+                # Sessão havia expirado — aborta essa tratativa e libera o loop
+                self._tratativa_concluida.set()
+                return
             await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
-
             self._video_liberado.clear()
             self.sinalLiberarVideo.emit()
             await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
@@ -508,6 +560,7 @@ class PlayWrightBot(QThread):
 
             await self.pagina.bring_to_front()
             await self.pagina.wait_for_timeout(500)
+            await self.pagina.keyboard.press("Enter")
             await self.pagina.mouse.click(400, 10)
             await self.pagina.wait_for_timeout(500)
             botaoConcluir = self.pagina.get_by_role("button", name="Concluir")
@@ -531,8 +584,19 @@ class PlayWrightBot(QThread):
     async def subirVideoZap(self):
         try:
             await self.pagina2.bring_to_front()
-            await self.pagina2.wait_for_timeout(500)
-            await self.pagina2.get_by_role("button", name="Anexar").click()
+            await self.pagina2.wait_for_timeout(1000)
+            try:
+                anexar = self.pagina2.get_by_role("button", name="Anexar")
+                await anexar.wait_for(state="visible", timeout=5000)
+            except:
+                pass
+            if not anexar:
+                try:
+                    anexar = self.pagina2.locator('xpath=//*[@id="main"]/footer/div[1]/div/span/div/div/div/div[1]/div/span/button/div/div/div[1]/span')
+                    await anexar.wait_for(state="visible", timeout=5000)
+                except:
+                    pass
+            await anexar.click()
             await self.pagina2.wait_for_timeout(1000)
             async with self.pagina2.expect_file_chooser() as fc_info:
                 await self.pagina2.click('button[aria-label="Fotos e vídeos"]')
@@ -545,10 +609,11 @@ class PlayWrightBot(QThread):
             await self.pagina2.wait_for_timeout(500)
             await self.pagina2.get_by_role("button", name="Enviar 1 item selecionado").click()
             await self.pagina2.wait_for_timeout(2000)
-            await self.pagina2.get_by_role("button", name="End icon button").click()
+            await self.pagina2.keyboard.press("Escape")
+            '''await self.pagina2.get_by_role("button", name="End icon button").click()
             await self.pagina2.wait_for_timeout(1000)
             await self.pagina2.get_by_text("Alerta de Fadiga - África").click()
-            await self.pagina2.wait_for_timeout(1000)
+            await self.pagina2.wait_for_timeout(1000)'''
         except Exception as e:
             import traceback
             print(f">>> ERRO subirVideoZap: {e}")
@@ -556,6 +621,9 @@ class PlayWrightBot(QThread):
         
     async def reportarOperacao(self):
         try:
+            if await self._relogarSeNecessario():
+                self._tratativa_concluida.set()
+                return
             await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
 
             self._video_liberado.clear()
@@ -665,6 +733,9 @@ class PlayWrightBot(QThread):
             print("Invalidação ignorada, nada sendo processado")
             return
         try:
+            if await self._relogarSeNecessario():
+                self._tratativa_concluida.set()
+                return
             print(">>> Iniciando invalidação do alerta")
               # Bloqueia o loop principal
             
@@ -1193,6 +1264,7 @@ class janelaPrincipal(QMainWindow):
         self.bot.sinalTabela.connect(self.atualizarTabela)
         self.bot.sinalSemAlertas.connect(self.toggleLoading)
         self.bot.sinalContador.connect(self.atualizarContador)
+        self.bot.sinalSessaoExpirada.connect(self.reabrirLogin)
         self.bot.start()
 
     def coletarInfo(self, alerta, placa, filial, empresa, motorista, dataHora):
@@ -1380,6 +1452,15 @@ class janelaPrincipal(QMainWindow):
 
         # Esquerda
         self.painelTabela.setVisible(not sem_alertas)
+
+    def reabrirLogin(self):
+        self.janelaLogin = janelaLogin()
+        self.janelaLogin.bot = self.bot
+        self.janelaLogin.sinalLogin.connect(self.bot.iniciarConta)
+        self.janelaLogin.sinalCodigo.connect(self.bot.enviarCodigo)
+        self.bot.sinalPedirCodigo.connect(self.janelaLogin.mostrarCampoCodigo)
+        self.bot.sinalLoginOk.connect(self.janelaLogin.close)
+        self.janelaLogin.show()
 
     def ajustarJanelaAoMonitor(self, largura_pct=70, altura_pct=90):
         """Ajusta o tamanho da janela como percentual da tela disponível."""

@@ -1,3 +1,6 @@
-2026/05/22-17:50:47.423 5adc Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\shared_proto_db/MANIFEST-000001
-2026/05/22-17:50:47.439 5adc Recovering log #23
-2026/05/22-17:50:47.442 5adc Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\shared_proto_db/000023.log 
+2026/05/24-17:07:22.399 f30 Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\shared_proto_db/MANIFEST-000001
+2026/05/24-17:07:22.437 f30 Recovering log #47
+2026/05/24-17:07:22.457 f30 Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\shared_proto_db/000047.log 
+2026/05/24-17:27:52.221 3afc Level-0 table #51: started
+2026/05/24-17:27:52.262 3afc Level-0 table #51: 100493 bytes OK
+2026/05/24-17:27:52.266 3afc Delete type=0 #47
