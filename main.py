@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QApplication, QCompleter, QMainWindow, QMessageBox, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTextEdit, QLineEdit, QComboBox, QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar
+from PySide6.QtWidgets import QApplication, QCompleter, QMainWindow, QMessageBox, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTextEdit, QLineEdit, QComboBox, QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar, QCheckBox
 from PySide6.QtMultimedia import QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 from PySide6.QtCore import QSettings, QStringListModel, QUrl, Qt, QThread, Signal, QRect
@@ -7,7 +7,6 @@ from playwright.async_api import async_playwright
 import sys
 import asyncio
 import os
-import pyautogui
 
 def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
@@ -29,6 +28,7 @@ class PlayWrightBot(QThread):
     sinalPedirCodigo = Signal()   # ← avisa a janela que precisa do código
     sinalLoginOk = Signal()       # ← avisa a janela que o login foi concluído
     sinalSessaoExpirada = Signal()
+    sinalAlertas = Signal(int, int, int)
 
     def __init__(self, url):
         super().__init__()
@@ -109,7 +109,7 @@ class PlayWrightBot(QThread):
                 channel="msedge",
                 headless=False,
                 args=[
-                "--window-position=-3000,0", #✅ joga a janela pra fora da tela
+                #✅ joga a janela pra fora da tela
                 "--window-size=1280,720"])
 
             #for pagina in self.navegador.pages:
@@ -183,7 +183,7 @@ class PlayWrightBot(QThread):
             #await self.pagina.pause()
             await self.pagina.get_by_role("button", name="Entrar").click()
             await self.pagina.wait_for_timeout(1000)
-            #await self.pagina.pause()
+            await self.pagina.pause()
 
             campo_codigo = self.pagina.get_by_role("textbox", name="Código")
             if await campo_codigo.count() > 0:
@@ -197,6 +197,8 @@ class PlayWrightBot(QThread):
 
 
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").click()
+
+            await self.pagina.get_by_role("columnheader", name="Data do Alarme Activate to").click()
             #await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-header/div/div[2]/div/div[3]/p-checkbox/div/div[2]/span").click()
             #await self.pagina.pause()
 
@@ -244,7 +246,6 @@ class PlayWrightBot(QThread):
 
                     self._tratativa_concluida.clear()
                     self.sinalSemAlertas.emit(False)
-                    #await self.pagina.pause()
                     '''
                     try:
                         dataHora = None
@@ -271,7 +272,8 @@ class PlayWrightBot(QThread):
                         print(f"Erro ao localizar dataHora: {e}")'''
 
                     self.dataHora = await self.pagina.locator('td[ng-reflect-ng-switch="datetime"] span[tooltipclass="diff"]').first.inner_text()
-
+                    await self.coletarQuantidadeAlertas()
+                    #await self.pagina.pause()
                     await tratativa.click()
                     
                     self.alerta = await self.pagina.locator("step-infos label:has-text('Tipo de Alerta') + p-dropdown label.ui-dropdown-label").inner_text()
@@ -815,6 +817,57 @@ class PlayWrightBot(QThread):
         if self.loop:
             asyncio.run_coroutine_threadsafe(self.invalidarAlerta(), self.loop)
 
+    def receberCheck(self):
+        self.check = janelaPrincipal()
+        self.check.sinalCheck.connect(self.escolherCheck)
+    
+    def clickCheck(self, valores):
+        if self.loop:
+            asyncio.run_coroutine_threadsafe(
+                self.escolherCheck(valores), self.loop
+            )
+    async def escolherCheck(self, estados: dict):
+        seletores = {
+            "Alto":  self.pagina.locator('.box-risk-chart[title="Filtrar Alertas de Alto Risco"] .fa.no-filter-icon'),
+            "Médio": self.pagina.locator('.box-risk-chart[title="Filtrar Alertas de Médio Risco"] .fa.no-filter-icon'),
+            "Baixo": self.pagina.locator('.box-risk-chart[title="Filtrar Alertas de Baixo Risco"] .fa.no-filter-icon'),
+        }
+
+        for nivel, deve_estar_marcado in estados.items():
+            try:
+                el = seletores[nivel]
+                if await el.count() == 0:
+                    print(f">>> Seletor '{nivel}' não encontrado na página")
+                    continue
+
+                classe = await el.get_attribute("class") or ""
+                esta_marcado = "fa-check-square-o" in classe
+
+                if deve_estar_marcado and not esta_marcado:
+                    if el.is_visible():
+                        await el.click()
+                    print(f">>> {nivel} marcado")
+                elif not deve_estar_marcado and esta_marcado:
+                    if el.is_visible():
+                        await el.click()
+                    print(f">>> {nivel} desmarcado")
+                else:
+                    print(f">>> {nivel} já está no estado correto")
+
+            except Exception as e:
+                print(f">>> ERRO escolherCheck [{nivel}]: {e}")
+            
+    async def coletarQuantidadeAlertas(self):
+        try:
+            alto  = await self.pagina.locator('.box-risk-chart[title="Filtrar Alertas de Alto Risco"] focus-donut-chart').get_attribute("ng-reflect-value")
+            medio = await self.pagina.locator('.box-risk-chart[title="Filtrar Alertas de Médio Risco"] focus-donut-chart').get_attribute("ng-reflect-value")
+            baixo = await self.pagina.locator('.box-risk-chart[title="Filtrar Alertas de Baixo Risco"] focus-donut-chart').get_attribute("ng-reflect-value")
+
+            print(f">>> Alto: {alto} | Médio: {medio} | Baixo: {baixo}")
+            self.sinalAlertas.emit(int(alto or 0), int(medio or 0), int(baixo or 0))
+        except Exception as e:
+            print(f">>> ERRO coletarQuantidadeAlertas: {e}")        
+
 class janelaLogin(QMainWindow):
     sinalLogin = Signal(str, str, str)
     sinalCodigo = Signal(str)
@@ -954,6 +1007,7 @@ class janelaLogin(QMainWindow):
 
 
 class janelaPrincipal(QMainWindow):
+    sinalCheck = Signal(str)
     def __init__(self):
         super().__init__()
         self.setWindowTitle("BotCreare")
@@ -1023,7 +1077,7 @@ class janelaPrincipal(QMainWindow):
         self.loadingWidget.setFont(QFont("Arial", 11))
         self.loadingWidget.setStyleSheet("color: #888; padding: 8px;")
         self.loadingWidget.hide()
-        layoutCentro.addWidget(self.loadingWidget)
+        layoutCentro.addWidget(self.loadingWidget)  
 
         # Seletor de vídeos
         self.seletorVideo = QComboBox()
@@ -1244,9 +1298,47 @@ class janelaPrincipal(QMainWindow):
         self.labelContador.setStyleSheet("color: #0088ff; padding: 2px;")
         layoutDireita.addWidget(self.labelContador)
 
-        # Empurra tudo para cima
-        #layoutDireita.addStretch()
+        layoutDireita.addStretch()
+        
+        # ALTO RISCO
+        layoutAltoRisco = QHBoxLayout()
+        layoutAltoRisco.setAlignment(Qt.AlignRight)
+        self.labelAltoRisco = QLabel("ALTO RISCO")
+        self.labelAltoRisco.setAlignment(Qt.AlignCenter)
+        self.labelAltoRisco.setFont(QFont("Average Sans", 15, QFont.Bold))
+        self.labelAltoRisco.setStyleSheet("color: #ff5b5b; padding: 2px;")
+        self.checkAltoRisco = QCheckBox()
+        layoutAltoRisco.addWidget(self.labelAltoRisco)
+        layoutAltoRisco.addWidget(self.checkAltoRisco)
+        self.checkAltoRisco.stateChanged.connect(self.validarRisco)
+        layoutDireita.addLayout(layoutAltoRisco)
 
+        # MÉDIO RISCO
+        layoutMedioRisco = QHBoxLayout()
+        layoutMedioRisco.setAlignment(Qt.AlignRight)
+        self.labelMedioRisco = QLabel("MÉDIO RISCO")
+        self.labelMedioRisco.setAlignment(Qt.AlignCenter)
+        self.labelMedioRisco.setFont(QFont("Average Sans", 15, QFont.Bold))
+        self.labelMedioRisco.setStyleSheet("color: #fbb630; padding: 2px;")
+        self.checkMedioRisco = QCheckBox()
+        layoutMedioRisco.addWidget(self.labelMedioRisco)
+        layoutMedioRisco.addWidget(self.checkMedioRisco)
+        self.checkMedioRisco.stateChanged.connect(self.validarRisco)
+        layoutDireita.addLayout(layoutMedioRisco)
+
+        # BAIXO RISCO
+        layoutBaixoRisco = QHBoxLayout()
+        layoutBaixoRisco.setAlignment(Qt.AlignRight)
+        self.labelBaixoRisco = QLabel("BAIXO RISCO")
+        self.labelBaixoRisco.setAlignment(Qt.AlignCenter)
+        self.labelBaixoRisco.setFont(QFont("Average Sans", 15, QFont.Bold))
+        self.labelBaixoRisco.setStyleSheet("color: #2e57a5; padding: 2px;")
+        self.checkBaixoRisco = QCheckBox()
+        layoutBaixoRisco.addWidget(self.labelBaixoRisco)
+        layoutBaixoRisco.addWidget(self.checkBaixoRisco)
+        self.checkBaixoRisco.stateChanged.connect(self.validarRisco)
+        layoutDireita.addLayout(layoutBaixoRisco)  
+  
         raiz.addWidget(self.colunaDireita, stretch=3)
 
         self.iniciarThread()
@@ -1265,6 +1357,7 @@ class janelaPrincipal(QMainWindow):
         self.bot.sinalSemAlertas.connect(self.toggleLoading)
         self.bot.sinalContador.connect(self.atualizarContador)
         self.bot.sinalSessaoExpirada.connect(self.reabrirLogin)
+        self.bot.sinalAlertas.connect(self.atualizarQuantidadeAlertas)
         self.bot.start()
 
     def coletarInfo(self, alerta, placa, filial, empresa, motorista, dataHora):
@@ -1461,6 +1554,29 @@ class janelaPrincipal(QMainWindow):
         self.bot.sinalPedirCodigo.connect(self.janelaLogin.mostrarCampoCodigo)
         self.bot.sinalLoginOk.connect(self.janelaLogin.close)
         self.janelaLogin.show()
+    
+    def validarRisco(self):
+        checks = [self.checkAltoRisco, self.checkMedioRisco, self.checkBaixoRisco]
+        marcados = [c for c in checks if c.isChecked()]
+
+        if len(marcados) == 3:
+            for c in checks:
+                c.blockSignals(True)
+                c.setChecked(False)
+                c.blockSignals(False)
+            self.bot.clickCheck({"Alto": False, "Médio": False, "Baixo": False})
+            return
+
+        self.bot.clickCheck({
+            "Alto":  self.checkAltoRisco.isChecked(),
+            "Médio": self.checkMedioRisco.isChecked(),
+            "Baixo": self.checkBaixoRisco.isChecked(),
+        })
+
+    def atualizarQuantidadeAlertas(self, alto, medio, baixo):
+        self.labelAltoRisco.setText(f"{alto} {'Alerta' if alto == 1 else 'Alertas'} - ALTO RISCO")
+        self.labelMedioRisco.setText(f"{medio} {'Alerta' if medio == 1 else 'Alertas'} - MÉDIO RISCO")
+        self.labelBaixoRisco.setText(f"{baixo} {'Alerta' if baixo == 1 else 'Alertas'} - BAIXO RISCO")
 
     def ajustarJanelaAoMonitor(self, largura_pct=70, altura_pct=90):
         """Ajusta o tamanho da janela como percentual da tela disponível."""

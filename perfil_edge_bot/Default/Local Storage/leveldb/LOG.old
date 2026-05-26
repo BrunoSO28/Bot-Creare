@@ -1,21 +1,6 @@
-2026/05/24-15:56:10.330 d3c Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\Local Storage\leveldb/MANIFEST-000001
-2026/05/24-15:56:10.357 d3c Recovering log #189
-2026/05/24-15:56:10.365 d3c Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\Local Storage\leveldb/000189.log 
-2026/05/24-15:58:10.986 1688 Level-0 table #193: started
-2026/05/24-15:58:10.997 1688 Level-0 table #193: 34277 bytes OK
-2026/05/24-15:58:11.000 1688 Delete type=0 #189
-2026/05/24-15:58:11.000 d3c Compacting 4@0 + 1@1 files
-2026/05/24-15:58:11.014 d3c Generated table #194@0: 1566 keys, 61567 bytes
-2026/05/24-15:58:11.014 d3c Compacted 4@0 + 1@1 files => 61567 bytes
-2026/05/24-15:58:11.016 d3c compacted to: files[ 0 1 1 0 0 0 0 ]
-2026/05/24-15:58:11.016 d3c Delete type=2 #183
-2026/05/24-15:58:11.016 d3c Delete type=2 #186
-2026/05/24-15:58:11.016 d3c Delete type=2 #188
-2026/05/24-15:58:11.017 d3c Delete type=2 #190
-2026/05/24-15:58:11.017 d3c Delete type=2 #193
-2026/05/24-16:05:58.436 1688 Level-0 table #196: started
-2026/05/24-16:05:58.450 1688 Level-0 table #196: 38396 bytes OK
-2026/05/24-16:05:58.454 1688 Delete type=0 #192
-2026/05/24-16:26:23.594 1688 Level-0 table #198: started
-2026/05/24-16:26:23.609 1688 Level-0 table #198: 40223 bytes OK
-2026/05/24-16:26:23.612 1688 Delete type=0 #195
+2026/05/25-16:49:21.462 583c Reusing MANIFEST C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\Local Storage\leveldb/MANIFEST-000001
+2026/05/25-16:49:21.466 583c Recovering log #232
+2026/05/25-16:49:21.468 583c Reusing old log C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\Local Storage\leveldb/000232.log 
+2026/05/25-16:49:34.476 19c Level-0 table #236: started
+2026/05/25-16:49:34.479 19c Level-0 table #236: 20286 bytes OK
+2026/05/25-16:49:34.481 19c Delete type=0 #232

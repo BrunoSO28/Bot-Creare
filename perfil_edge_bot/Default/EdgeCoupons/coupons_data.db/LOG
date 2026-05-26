@@ -1,15 +1,15 @@
-2026/05/24-17:07:25.667 4b94 Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2026/05/24-17:07:25.823 4b94 Recovering log #185
-2026/05/24-17:07:25.890 4b94 Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000185.log 
-2026/05/24-17:07:29.210 1d60 Level-0 table #189: started
-2026/05/24-17:07:29.249 1d60 Level-0 table #189: 682560 bytes OK
-2026/05/24-17:07:29.254 1d60 Delete type=0 #185
-2026/05/24-17:07:29.256 3afc Compacting 4@0 + 1@1 files
-2026/05/24-17:07:29.292 3afc Generated table #190@0: 3 keys, 682560 bytes
-2026/05/24-17:07:29.292 3afc Compacted 4@0 + 1@1 files => 682560 bytes
-2026/05/24-17:07:29.296 3afc compacted to: files[ 0 1 1 0 0 0 0 ]
-2026/05/24-17:07:29.297 3afc Delete type=2 #177
-2026/05/24-17:07:29.297 3afc Delete type=2 #180
-2026/05/24-17:07:29.297 3afc Delete type=2 #183
-2026/05/24-17:07:29.297 3afc Delete type=2 #186
-2026/05/24-17:07:29.297 3afc Delete type=2 #189
+2026/05/25-16:59:36.290 64cc Reusing MANIFEST C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/05/25-16:59:36.291 64cc Recovering log #276
+2026/05/25-16:59:36.292 64cc Reusing old log C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000276.log 
+2026/05/25-16:59:36.479 44a8 Level-0 table #280: started
+2026/05/25-16:59:36.484 44a8 Level-0 table #280: 682560 bytes OK
+2026/05/25-16:59:36.488 44a8 Delete type=0 #276
+2026/05/25-16:59:36.489 1244 Compacting 4@0 + 1@1 files
+2026/05/25-16:59:36.494 1244 Generated table #281@0: 3 keys, 682560 bytes
+2026/05/25-16:59:36.494 1244 Compacted 4@0 + 1@1 files => 682560 bytes
+2026/05/25-16:59:36.495 1244 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/05/25-16:59:36.497 1244 Delete type=2 #268
+2026/05/25-16:59:36.497 1244 Delete type=2 #271
+2026/05/25-16:59:36.497 1244 Delete type=2 #274
+2026/05/25-16:59:36.497 1244 Delete type=2 #277
+2026/05/25-16:59:36.497 1244 Delete type=2 #280
