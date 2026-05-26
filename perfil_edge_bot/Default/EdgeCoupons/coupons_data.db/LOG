@@ -1,15 +1,15 @@
-2026/05/25-16:59:36.290 64cc Reusing MANIFEST C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2026/05/25-16:59:36.291 64cc Recovering log #276
-2026/05/25-16:59:36.292 64cc Reusing old log C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000276.log 
-2026/05/25-16:59:36.479 44a8 Level-0 table #280: started
-2026/05/25-16:59:36.484 44a8 Level-0 table #280: 682560 bytes OK
-2026/05/25-16:59:36.488 44a8 Delete type=0 #276
-2026/05/25-16:59:36.489 1244 Compacting 4@0 + 1@1 files
-2026/05/25-16:59:36.494 1244 Generated table #281@0: 3 keys, 682560 bytes
-2026/05/25-16:59:36.494 1244 Compacted 4@0 + 1@1 files => 682560 bytes
-2026/05/25-16:59:36.495 1244 compacted to: files[ 0 1 1 0 0 0 0 ]
-2026/05/25-16:59:36.497 1244 Delete type=2 #268
-2026/05/25-16:59:36.497 1244 Delete type=2 #271
-2026/05/25-16:59:36.497 1244 Delete type=2 #274
-2026/05/25-16:59:36.497 1244 Delete type=2 #277
-2026/05/25-16:59:36.497 1244 Delete type=2 #280
+2026/05/26-17:04:40.937 2540 Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/05/26-17:04:40.947 2540 Recovering log #16
+2026/05/26-17:04:40.951 2540 Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000016.log 
+2026/05/26-17:04:41.727 30bc Level-0 table #20: started
+2026/05/26-17:04:41.738 30bc Level-0 table #20: 682736 bytes OK
+2026/05/26-17:04:41.741 30bc Delete type=0 #16
+2026/05/26-17:04:41.742 30bc Compacting 4@0 + 1@1 files
+2026/05/26-17:04:41.764 30bc Generated table #21@0: 3 keys, 682736 bytes
+2026/05/26-17:04:41.764 30bc Compacted 4@0 + 1@1 files => 682736 bytes
+2026/05/26-17:04:41.766 30bc compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/05/26-17:04:41.766 30bc Delete type=2 #8
+2026/05/26-17:04:41.767 30bc Delete type=2 #11
+2026/05/26-17:04:41.767 30bc Delete type=2 #14
+2026/05/26-17:04:41.767 30bc Delete type=2 #17
+2026/05/26-17:04:41.767 30bc Delete type=2 #20

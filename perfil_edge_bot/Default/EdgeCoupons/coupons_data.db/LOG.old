@@ -1,6 +1,6 @@
-2026/05/25-16:49:24.560 304c Reusing MANIFEST C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2026/05/25-16:49:24.561 304c Recovering log #273
-2026/05/25-16:49:24.562 304c Reusing old log C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000273.log 
-2026/05/25-16:49:24.597 55dc Level-0 table #277: started
-2026/05/25-16:49:24.602 55dc Level-0 table #277: 682560 bytes OK
-2026/05/25-16:49:24.605 55dc Delete type=0 #273
+2026/05/26-16:48:02.781 4fc8 Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/05/26-16:48:02.808 4fc8 Recovering log #13
+2026/05/26-16:48:02.809 4fc8 Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000013.log 
+2026/05/26-16:48:13.842 2f04 Level-0 table #17: started
+2026/05/26-16:48:13.873 2f04 Level-0 table #17: 682736 bytes OK
+2026/05/26-16:48:13.877 2f04 Delete type=0 #13
