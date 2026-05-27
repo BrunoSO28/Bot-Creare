@@ -1,15 +1,6 @@
-2026/05/26-17:04:40.937 2540 Reusing MANIFEST C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
-2026/05/26-17:04:40.947 2540 Recovering log #16
-2026/05/26-17:04:40.951 2540 Reusing old log C:\Users\RASTREAMENTO\Desktop\FADIGA PASTAS\Bruno\Bot-Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000016.log 
-2026/05/26-17:04:41.727 30bc Level-0 table #20: started
-2026/05/26-17:04:41.738 30bc Level-0 table #20: 682736 bytes OK
-2026/05/26-17:04:41.741 30bc Delete type=0 #16
-2026/05/26-17:04:41.742 30bc Compacting 4@0 + 1@1 files
-2026/05/26-17:04:41.764 30bc Generated table #21@0: 3 keys, 682736 bytes
-2026/05/26-17:04:41.764 30bc Compacted 4@0 + 1@1 files => 682736 bytes
-2026/05/26-17:04:41.766 30bc compacted to: files[ 0 1 1 0 0 0 0 ]
-2026/05/26-17:04:41.766 30bc Delete type=2 #8
-2026/05/26-17:04:41.767 30bc Delete type=2 #11
-2026/05/26-17:04:41.767 30bc Delete type=2 #14
-2026/05/26-17:04:41.767 30bc Delete type=2 #17
-2026/05/26-17:04:41.767 30bc Delete type=2 #20
+2026/05/27-16:49:01.825 5364 Reusing MANIFEST C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/05/27-16:49:01.826 5364 Recovering log #114
+2026/05/27-16:49:01.826 5364 Reusing old log C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\EdgeCoupons/coupons_data.db/000114.log 
+2026/05/27-16:49:01.902 580c Level-0 table #118: started
+2026/05/27-16:49:01.906 580c Level-0 table #118: 682736 bytes OK
+2026/05/27-16:49:01.909 580c Delete type=0 #114

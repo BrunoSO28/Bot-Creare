@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QApplication, QCompleter, QMainWindow, QMessageBox, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QTextEdit, QLineEdit, QComboBox, QSizePolicy, QTableWidget, QTableWidgetItem, QHeaderView, QProgressBar, QCheckBox, QDialog
 from PySide6.QtMultimedia import QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
-from PySide6.QtCore import QSettings, QStringListModel, QUrl, Qt, QThread, Signal, QRect
+from PySide6.QtCore import QSettings, QStringListModel, QUrl, Qt, QThread, Signal, QRect, QMetaObject
 from PySide6.QtGui import QFont, QScreen, QIcon, QPixmap
 from playwright.async_api import async_playwright
 import sys
@@ -91,8 +91,29 @@ class PlayWrightBot(QThread):
             #Login na conta
             await self.pagina.goto(self.url, wait_until="commit", timeout=0)
 
-            await self.pagina2.goto("https://web.whatsapp.com/", wait_until="commit", timeout=0)
-
+            await self.pagina2.goto("https://web.whatsapp.com/", wait_until="commit", timeout=0)       
+            
+            await self.pagina2.bring_to_front()
+            botaoNestaJanela = self.pagina2.get_by_role("button", name="Usar nesta janela")
+            try:
+                await botaoNestaJanela.wait_for(state="visible", timeout=5000)
+                await botaoNestaJanela.click()
+            except:
+                pass
+            
+            qrCode = self.pagina2.get_by_role("img", name="Scan this QR code to link a")
+            try:
+                await qrCode.wait_for(state="visible", timeout=10000)
+            except:
+                pass
+            if await qrCode.count() > 0:
+                screenshot = await qrCode.screenshot()
+                self.sinalQrCode.emit(screenshot)
+                await qrCode.wait_for(state="hidden", timeout=120000)  # 2 minutos para escanear
+                self.sinalWhatsappConectado.emit()
+            else:
+                self.sinalWhatsappConectado.emit()
+    
             await self.pagina.bring_to_front()
             # Aguarda o campo de usuário estar visível
             try:
@@ -215,7 +236,7 @@ class PlayWrightBot(QThread):
                 if not habilitado:
                     await asyncio.sleep(2)
                     continue
-
+                
                 self._tratativa_concluida.clear()
                 self.sinalSemAlertas.emit(False)
                 self.dataHora = await self.pagina.locator('td[ng-reflect-ng-switch="datetime"] span[tooltipclass="diff"]').first.inner_text()
@@ -618,18 +639,6 @@ class PlayWrightBot(QThread):
 
             print(self.reportOperacao)
 
-            botaoNestaJanela = self.pagina2.get_by_role("button", name="Usar nesta janela")
-            await self.pagina2.bring_to_front()
-            if await botaoNestaJanela.count() > 0 :
-                await botaoNestaJanela.click()
-
-            qrCode = self.pagina2.get_by_role("img", name="Scan this QR code to link a")
-            if await qrCode.count() > 0:
-                screenshot = await qrCode.screenshot()
-                self.sinalQrCode.emit(screenshot)
-            else:
-                self.sinalWhatsappConectado.emit()
-
             match self.filial: 
                 case "Distribuição":
                     await self.pagina2.bring_to_front()
@@ -999,6 +1008,7 @@ class janelaPrincipal(QMainWindow):
         self.setWindowIcon(QIcon(resource_path("icone_creare.ico")))
         self.video_atual = None
         self.videos = {}
+        self.janelaQr = None
 
         # Janela mais alta e menos larga: 70% largura, 90% altura
         self.ajustarJanelaAoMonitor(largura_pct=70, altura_pct=90)
@@ -1345,7 +1355,7 @@ class janelaPrincipal(QMainWindow):
         self.bot.sinalSessaoExpirada.connect(self.reabrirLogin)
         self.bot.sinalAlertas.connect(self.atualizarQuantidadeAlertas)
         self.bot.sinalQrCode.connect(self.qrCode)
-        self.bot.sinalWhatsappConectado.connect(self.fecharQrSeAberto)
+        self.bot.sinalWhatsappConectado.connect(self.fecharQrSeAberto, Qt.QueuedConnection)
         self.bot.start()
 
     def coletarInfo(self, alerta, placa, filial, empresa, motorista, dataHora):
@@ -1664,6 +1674,9 @@ class janelaPrincipal(QMainWindow):
         """)
 
     def qrCode(self, dados: bytes):
+        if self.janelaQr is not None:  # já aberta, atualiza ao invés de criar nova
+            return
+
         self.janelaQr = QDialog(self)
         self.janelaQr.setWindowTitle("Conectar WhatsApp")
         self.janelaQr.setModal(True)
@@ -1695,8 +1708,9 @@ class janelaPrincipal(QMainWindow):
         self.janelaQr.show()
 
     def fecharQrSeAberto(self):
-        if hasattr(self, 'janelaQr') and self.janelaQr.isVisible():
-            self.janelaQr.close()
+        if hasattr(self, 'janelaQr') and self.janelaQr is not None:
+            QMetaObject.invokeMethod(self.janelaQr, "close", Qt.QueuedConnection)
+            self.janelaQr = None
 
 
     def ajustarJanelaAoMonitor(self, largura_pct=70, altura_pct=90):
