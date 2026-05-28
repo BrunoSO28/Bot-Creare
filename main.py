@@ -48,6 +48,8 @@ class PlayWrightBot(QThread):
         self.senha = ""
         self.codigo = ""
         self._codigo_recebido = asyncio.Event()
+        self.window_id = None
+        self.cdp = None
 
     def receberConta(self):
         self.conta = janelaLogin()
@@ -107,9 +109,32 @@ class PlayWrightBot(QThread):
             except:
                 pass
             if await qrCode.count() > 0:
-                screenshot = await qrCode.screenshot()
-                self.sinalQrCode.emit(screenshot)
-                await qrCode.wait_for(state="hidden", timeout=120000)  # 2 minutos para escanear
+                
+                await self.pagina2.wait_for_selector(
+                    'canvas[aria-label="Scan this QR code to link a device!"]',
+                    state="visible",
+                    timeout=30000
+                )
+
+                self.cdp = await self.navegador.new_cdp_session(self.pagina2)
+                self.window_id = (await self.cdp.send("Browser.getWindowForTarget"))["windowId"]
+
+                # Maximiza
+                await self.cdp.send("Browser.setWindowBounds", {
+                    "windowId": self.window_id,
+                    "bounds": {"windowState": "maximized"}
+                })
+
+                await self.pagina2.bring_to_front()
+                self.sinalQrCode.emit(b"")
+
+                await qrCode.wait_for(state="hidden", timeout=120000)
+                
+                await self.cdp.send("Browser.setWindowBounds", {
+                    "windowId": self.window_id,
+                    "bounds": {"windowState": "normal", "left": -3000, "top": 0, "width": 1280, "height": 720}
+                })
+
                 self.sinalWhatsappConectado.emit()
             else:
                 self.sinalWhatsappConectado.emit()
@@ -1300,7 +1325,7 @@ class janelaPrincipal(QMainWindow):
         layoutAltoRisco.setAlignment(Qt.AlignRight)
         self.labelAltoRisco = QLabel("ALTO RISCO")
         self.labelAltoRisco.setAlignment(Qt.AlignCenter)
-        self.labelAltoRisco.setFont(QFont("Average Sans", 15, QFont.Bold))
+        self.labelAltoRisco.setFont(QFont("Average Sans", 12, QFont.Bold))
         self.labelAltoRisco.setStyleSheet("color: #ff5b5b; padding: 2px;")
         self.checkAltoRisco = QCheckBox()
         layoutAltoRisco.addWidget(self.labelAltoRisco)
@@ -1313,7 +1338,7 @@ class janelaPrincipal(QMainWindow):
         layoutMedioRisco.setAlignment(Qt.AlignRight)
         self.labelMedioRisco = QLabel("MÉDIO RISCO")
         self.labelMedioRisco.setAlignment(Qt.AlignCenter)
-        self.labelMedioRisco.setFont(QFont("Average Sans", 15, QFont.Bold))
+        self.labelMedioRisco.setFont(QFont("Average Sans", 12, QFont.Bold))
         self.labelMedioRisco.setStyleSheet("color: #fbb630; padding: 2px;")
         self.checkMedioRisco = QCheckBox()
         layoutMedioRisco.addWidget(self.labelMedioRisco)
@@ -1326,7 +1351,7 @@ class janelaPrincipal(QMainWindow):
         layoutBaixoRisco.setAlignment(Qt.AlignRight)
         self.labelBaixoRisco = QLabel("BAIXO RISCO")
         self.labelBaixoRisco.setAlignment(Qt.AlignCenter)
-        self.labelBaixoRisco.setFont(QFont("Average Sans", 15, QFont.Bold))
+        self.labelBaixoRisco.setFont(QFont("Average Sans", 12, QFont.Bold))
         self.labelBaixoRisco.setStyleSheet("color: #2e57a5; padding: 2px;")
         self.checkBaixoRisco = QCheckBox()
         layoutBaixoRisco.addWidget(self.labelBaixoRisco)
@@ -1679,14 +1704,14 @@ class janelaPrincipal(QMainWindow):
 
         self.janelaQr = QDialog(self)
         self.janelaQr.setWindowTitle("Conectar WhatsApp")
-        self.janelaQr.setModal(True)
+        self.janelaQr.setModal(False)
         self.janelaQr.setStyleSheet("background-color: #1e1e1e; color: #e0e0e0;")
 
         layout = QVBoxLayout(self.janelaQr)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setContentsMargins(30, 30, 30, 30)
         layout.setSpacing(12)
 
-        instrucao = QLabel("Abra o WhatsApp no celular\ne escaneie o QR Code abaixo")
+        instrucao = QLabel("O navegador foi aberto com o QR Code.\nEscaneie pelo WhatsApp no celular.")
         instrucao.setAlignment(Qt.AlignCenter)
         instrucao.setFont(QFont("Arial", 11))
         layout.addWidget(instrucao)
