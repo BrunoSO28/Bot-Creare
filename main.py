@@ -62,6 +62,7 @@ class PlayWrightBot(QThread):
         self.codigo = codigo
         self._codigo_recebido.clear()
         if self.loop:
+            self.loop.call_soon_threadsafe(self._conta_recebida.clear)
             self.loop.call_soon_threadsafe(self._conta_recebida.set)
 
     async def verificarSessao(self):
@@ -425,6 +426,7 @@ class PlayWrightBot(QThread):
                     campo_codigo = self.pagina.get_by_role("textbox", name="Código")
                     if await campo_codigo.count() > 0:
                         self.sinalPedirCodigo.emit()
+                        self._codigo_recebido.clear()
                         await self._codigo_recebido.wait()
                         await campo_codigo.fill(self.codigo)
                         await self.pagina.get_by_role("button", name="Entrar").click()
@@ -433,15 +435,36 @@ class PlayWrightBot(QThread):
                     self.sinalLoginOk.emit()
                     print(">>> Relogin concluído pelo monitor")
 
-                    # Navega de volta ao estado inicial (filtro de data)
-                    await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").click()
-                    await self.pagina.get_by_role("columnheader", name="Data do Alarme Activate to").click()
+                    try:
+                        await self.pagina.wait_for_load_state("networkidle", timeout=10000)
+                    except:
+                        await self.pagina.wait_for_timeout(2000)
 
-                    # Libera o loop principal para recomeçar do início
+                    try:
+                        toggle = self.pagina.locator(
+                            ".theme-switch.ng-star-inserted > .switch > .slider"
+                        )
+                        await toggle.click()
+                        await self.pagina.wait_for_timeout(500)
+                        await toggle.click()
+                        await self.pagina.wait_for_timeout(500)
+                    except Exception as e:
+                        print(f">>> ERRO ao clicar no toggle: {e}")
+
+                    # Ordena pela data do alarme
+                    try:
+                        await self.pagina.get_by_role(
+                            "columnheader", name="Data do Alarme Activate to"
+                        ).click()
+                        await self.pagina.wait_for_timeout(500)
+                    except Exception as e:
+                        print(f">>> ERRO ao clicar no cabeçalho: {e}")
+
+                    # Libera o loop principal para recomeçar
                     self._tratativa_concluida.set()
 
             except Exception as e:
-                pass  # página pode não estar pronta ainda
+                print(f">>> ERRO monitorarSessao: {e}")
 
             await asyncio.sleep(2)  # verifica a cada 2 segundos
     
