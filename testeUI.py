@@ -7,7 +7,7 @@ from playwright.async_api import async_playwright
 import sys
 import asyncio
 import os
-
+from botcreare_ui import janelaLogin, janelaPrincipal, STYLESHEET
 
 def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
@@ -911,7 +911,7 @@ class PlayWrightBot(QThread):
         except Exception as e:
             print(f">>> ERRO coletarQuantidadeAlertas: {e}")        
 
-class janelaLogin(QMainWindow):
+'''class janelaLogin(QMainWindow):
     sinalLogin = Signal(str, str, str)
     sinalCodigo = Signal(str)
     def __init__(self):
@@ -1774,7 +1774,7 @@ class janelaPrincipal(QMainWindow):
             self.setGeometry(x, y, largura, altura)
             print(f"Janela: {largura}x{altura} em ({x}, {y})")
         else:
-            print("Não foi possível detectar a tela")
+            print("Não foi possível detectar a tela")'''
 
 
 # ── Execução ─────────────────────────────────────────────────────────────────
