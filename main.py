@@ -7,12 +7,24 @@ from playwright.async_api import async_playwright
 import sys
 import asyncio
 import os
+import ctypes
+from ctypes import wintypes
 
 
 def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.dirname(__file__), relative_path)
+
+def aplicar_modo_escuro(hwnd):
+    DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+    value = ctypes.c_int(1)
+    ctypes.windll.dwmapi.DwmSetWindowAttribute(
+        hwnd,
+        DWMWA_USE_IMMERSIVE_DARK_MODE,
+        ctypes.byref(value),
+        ctypes.sizeof(value)
+    )
 
 #BOT do navegador
 class PlayWrightBot(QThread):
@@ -625,8 +637,8 @@ class PlayWrightBot(QThread):
                 await botaoConcluir.click()
             #await self.pagina.wait_for_timeout(300)
             #pyautogui.hotkey('Enter')
-            #await self.pagina.wait_for_timeout(500)
-            #pyautogui.hotkey('Enter')
+            await self.pagina.wait_for_timeout(500)
+            await self.pagina.keyboard.press("Enter")
 
             await self.pagina.wait_for_timeout(3000)
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
@@ -653,7 +665,12 @@ class PlayWrightBot(QThread):
                     await anexar.wait_for(state="visible", timeout=5000)
                 except:
                     pass
-            await anexar.click()
+            try:
+                await anexar.scroll_into_view_if_needed()
+                await anexar.wait_for(state="visible", timeout=3000)
+                await anexar.click()
+            except:
+                pass
             await self.pagina2.wait_for_timeout(1000)
             async with self.pagina2.expect_file_chooser() as fc_info:
                 await self.pagina2.click('button[aria-label="Fotos e vídeos"]')
@@ -665,7 +682,7 @@ class PlayWrightBot(QThread):
             await self.pagina2.get_by_test_id("media-caption-input-container").get_by_role("paragraph").fill(self.reportOperacao)
             await self.pagina2.wait_for_timeout(500)
             await self.pagina2.get_by_role("button", name="Enviar 1 item selecionado").click()
-            await self.pagina2.wait_for_timeout(2000)
+            await self.pagina2.wait_for_timeout(1000)
             await self.pagina2.keyboard.press("Escape")
             '''await self.pagina2.get_by_role("button", name="End icon button").click()
             await self.pagina2.wait_for_timeout(1000)
@@ -745,17 +762,17 @@ class PlayWrightBot(QThread):
                     await self.pagina2.get_by_text("Alerta de Fadiga - Bracell").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
-                
+
             await self.pagina.bring_to_front()
             await self.pagina.wait_for_timeout(500)
             await self.pagina.mouse.click(400, 10)
             await self.pagina.wait_for_timeout(500)
             await self.pagina.mouse.click(400, 10)
-            #await self.pagina.get_by_role("button", name="Concluir").click()
-            #await self.pagina.mouse.click(400, 10)
-            #await self.pagina.wait_for_timeout(300)
-            #pyautogui.hotkey('Enter')
-
+            botaoConcluir = self.pagina.get_by_role("button", name="Concluir")
+            if await botaoConcluir.count > 0:
+                await self.pagina.wait_for_timeout(300)
+                await botaoConcluir.click()
+             
             print(">>> Aguardando tabela atualizar...")
             await self.pagina.wait_for_timeout(3000)
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
@@ -837,6 +854,8 @@ class PlayWrightBot(QThread):
             await self.pagina.mouse.click(400,10)
             await self.pagina.wait_for_timeout(700)
             await self.pagina.mouse.click(400,10)
+            await self.pagina.wait_for_timeout(700)
+            await self.pagina.keyboard.press("Enter")
             await self.pagina.wait_for_timeout(700)
             
             print(">>> Aguardando tabela atualizar...")
@@ -966,12 +985,18 @@ class janelaLogin(QMainWindow):
         self.btnEntrar.setFixedSize(300, 25)
         self.btnEntrar.clicked.connect(self.submitLogin)
 
+        self.labelCR = QLabel("Desenvolvido por Bruno Oliveira")
+        self.labelCR.setAlignment(Qt.AlignCenter)
+        self.labelCR.setFont(QFont("Average Sans"))
+        self.labelCR.setStyleSheet("color: gray;")
+
         layoutInfo.addWidget(self.labelConta)
         layoutLogin.addWidget(self.inputEmail)
         layoutLogin.addWidget(self.inputSenha)
         layoutLogin.addWidget(self.labelCodigo)
         layoutLogin.addWidget(self.inputCodigo)
         layoutLogin.addWidget(self.btnEntrar)
+        layoutLogin.addWidget(self.labelCR)
 
         raiz.addWidget(info)
         raiz.addWidget(login)
@@ -1786,6 +1811,8 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     janela = janelaPrincipal()
     janela.show()
+    hwnd = int(janela.winId())
+    aplicar_modo_escuro(hwnd)
 
     janela2 = janelaLogin()
     janela2.bot = janela.bot  # ← referência para enviarCodigo()
