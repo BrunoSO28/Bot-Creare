@@ -1625,6 +1625,7 @@ class janelaPrincipal(QMainWindow):
         self.janelaLogin.sinalCodigo.connect(self.bot.enviarCodigo)
         self.bot.sinalPedirCodigo.connect(self.janelaLogin.mostrarCampoCodigo)
         self.bot.sinalLoginOk.connect(self.janelaLogin.close)
+        self.janelaLogin.setWindowFlags(self.janelaLogin.windowFlags() | Qt.WindowStaysOnTopHint)
         self.janelaLogin.show()
     
     def validarRisco(self):
@@ -1819,7 +1820,8 @@ if __name__ == "__main__":
     janela2.sinalLogin.connect(janela.bot.iniciarConta)
     janela2.sinalCodigo.connect(janela.bot.enviarCodigo)
     janela.bot.sinalPedirCodigo.connect(janela2.mostrarCampoCodigo)  # ← mostra campo de código
-    janela.bot.sinalLoginOk.connect(janela2.close)                   # ← fecha só quando logado
+    janela.bot.sinalLoginOk.connect(janela2.close)
+    janela2.setWindowFlags(janela2.windowFlags() | Qt.WindowStaysOnTopHint)
     janela2.show()
 
     sys.exit(app.exec())
