@@ -709,6 +709,43 @@ class PlayWrightBot(QThread):
                 pass
 
             await self.pagina.wait_for_timeout(300)
+
+            qrCode = self.pagina2.get_by_role("img", name="Scan this QR code to link a")
+            try:
+                await qrCode.wait_for(state="visible", timeout=15000)
+            except:
+                pass
+            if await qrCode.count() > 0:
+                
+                await self.pagina2.wait_for_selector(
+                    'canvas[aria-label="Scan this QR code to link a device!"]',
+                    state="visible",
+                    timeout=30000
+                )
+
+                self.cdp = await self.navegador.new_cdp_session(self.pagina2)
+                self.window_id = (await self.cdp.send("Browser.getWindowForTarget"))["windowId"]
+
+                # Maximiza
+                await self.cdp.send("Browser.setWindowBounds", {
+                    "windowId": self.window_id,
+                    "bounds": {"windowState": "maximized"}
+                })
+
+                await self.pagina2.bring_to_front()
+                self.sinalQrCode.emit(b"")
+
+                await qrCode.wait_for(state="hidden", timeout=120000)
+                
+                await self.cdp.send("Browser.setWindowBounds", {
+                    "windowId": self.window_id,
+                    "bounds": {"windowState": "normal", "left": -3000, "top": 0, "width": 1280, "height": 720}
+                })
+
+                self.sinalWhatsappConectado.emit()
+            else:
+                self.sinalWhatsappConectado.emit()
+                
             self.reportOperacao = await self.pagina.locator('div[style="width: 100%;"]').inner_text()
 
             print(self.reportOperacao)
