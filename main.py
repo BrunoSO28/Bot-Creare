@@ -153,6 +153,9 @@ class PlayWrightBot(QThread):
             else:
                 self.sinalWhatsappConectado.emit()
     
+            await self.pagina2.wait_for_timeout(1000)
+            await self.pagina.keyboard.press("Escape")
+
             await self.pagina.bring_to_front()
             # Aguarda o campo de usuário estar visível
             try:
@@ -753,6 +756,9 @@ class PlayWrightBot(QThread):
                 self.sinalWhatsappConectado.emit()
             else:
                 self.sinalWhatsappConectado.emit()
+
+            await self.pagina2.wait_for_timeout(1000)
+            await self.pagina.keyboard.press("Escape")
                 
             self.reportOperacao = await self.pagina.locator('div[style="width: 100%;"]').inner_text()
 
