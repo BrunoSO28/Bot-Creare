@@ -299,7 +299,7 @@ class PlayWrightBot(QThread):
                 await self.pagina.locator(".playMovie").first.dblclick()
                 await self.pagina.wait_for_timeout(1000)
 
-                video1 = self.pagina.locator("xpath=/html/body/dinamic-dialog/div/div/ng-component/div/ul/li[1]/div/div/app-download-button/button/i")
+                video1 = self.pagina.locator(".download-button").first
 
                 video2 = self.pagina.locator("li:nth-child(2) > .video-wrapper > .download-container > app-download-button > .download-button")
 
@@ -397,6 +397,14 @@ class PlayWrightBot(QThread):
                 await self.pagina.get_by_role("button", name="Aplicar gestão").click()
                 await self.pagina.wait_for_timeout(500)
                 await self.pagina.get_by_role("button", name="Aplicar gestão").click()
+
+                cancela = self.pagina.get_by_role("button", name="Cancel")
+                try:
+                    await cancela.wait_for(state="visible", timeout=2000)
+                except:
+                    pass
+                if await cancela.count()> 0:
+                    await cancela.click()
                 #await self.pagina.pause()
 
                 self.sinalPronto.emit()
@@ -712,7 +720,7 @@ class PlayWrightBot(QThread):
 
             qrCode = self.pagina2.get_by_role("img", name="Scan this QR code to link a")
             try:
-                await qrCode.wait_for(state="visible", timeout=15000)
+                await qrCode.wait_for(state="visible", timeout=5000)
             except:
                 pass
             if await qrCode.count() > 0:
@@ -805,10 +813,17 @@ class PlayWrightBot(QThread):
             await self.pagina.mouse.click(400, 10)
             await self.pagina.wait_for_timeout(500)
             await self.pagina.mouse.click(400, 10)
+            await self.pagina.wait_for_timeout(500)
+            await self.pagina.keyboard.press("Enter")
             botaoConcluir = self.pagina.get_by_role("button", name="Concluir")
-            if await botaoConcluir.count > 0:
-                await self.pagina.wait_for_timeout(300)
+            try:
+                await botaoConcluir.wait_for(state="visible", timeout=1000)
                 await botaoConcluir.click()
+            except:
+                pass
+
+            if await botaoConcluir.count() > 0 :
+                await self.pagina.keyboard.press("Escape")
              
             print(">>> Aguardando tabela atualizar...")
             await self.pagina.wait_for_timeout(3000)
