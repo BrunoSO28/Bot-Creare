@@ -251,9 +251,9 @@ class PlayWrightBot(QThread):
                         timeout=3000
                     )
                 except:
-                    pass                              
+                    pass
                 try:
-                    tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button')
+                    tratativa = self.pagina.locator('button[ng-reflect-ngb-tooltip="Inserir Tratativa"]')                             
                 except:
                     pass
                 if not tratativa:
@@ -262,7 +262,7 @@ class PlayWrightBot(QThread):
                     except:
                         pass
                 if not tratativa:
-                    tratativa = self.pagina.locator('button[ng-reflect-ngb-tooltip="Inserir Tratativa"]')
+                    tratativa = self.pagina.locator('xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button')
                 
                 quantidade = await tratativa.count()
                 print(f">>> Quantidade de alertas: {quantidade}")  
@@ -632,24 +632,22 @@ class PlayWrightBot(QThread):
             self.sinalLiberarVideo.emit()
             await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
 
-            await self.pagina.wait_for_timeout(500)
-            await self.pagina.mouse.click(400, 10)
-            #await self.pagina.wait_for_timeout(500)
-            #await self.pagina.get_by_role("button", name="Concluir").click()
-            #await self.pagina.wait_for_timeout(500)
-
             await self.pagina.bring_to_front()
             await self.pagina.wait_for_timeout(500)
-            await self.pagina.keyboard.press("Enter")
             await self.pagina.mouse.click(400, 10)
             await self.pagina.wait_for_timeout(500)
-            botaoConcluir = self.pagina.get_by_role("button", name="Concluir")
-            if await botaoConcluir.count() > 0 :
-                await botaoConcluir.click()
-            #await self.pagina.wait_for_timeout(300)
-            #pyautogui.hotkey('Enter')
+            await self.pagina.mouse.click(400, 10)
             await self.pagina.wait_for_timeout(500)
             await self.pagina.keyboard.press("Enter")
+            botaoConcluir = self.pagina.get_by_role("button", name="Concluir")
+            try:
+                await botaoConcluir.wait_for(state="visible", timeout=1000)
+                await botaoConcluir.click()
+            except:
+                pass
+
+            if await botaoConcluir.count() > 0 :
+                await self.pagina.keyboard.press("Escape")
 
             await self.pagina.wait_for_timeout(3000)
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").dblclick()
