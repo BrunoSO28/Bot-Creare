@@ -253,7 +253,7 @@ class PlayWrightBot(QThread):
                 except:
                     pass
                 try:
-                    tratativa = self.pagina.locator('button[ng-reflect-ngb-tooltip="Inserir Tratativa"]')                             
+                    tratativa = self.pagina.locator('button[ng-reflect-ngb-tooltip="Inserir Tratativa"]').first                           
                 except:
                     pass
                 if not tratativa:
@@ -431,7 +431,9 @@ class PlayWrightBot(QThread):
                     print(">>> Sessão expirada detectada pelo monitor")
                     
                     # Pausa o loop principal
-                    self._tratativa_concluida.clear()
+                    self._video_liberado.clear()
+                    self.sinalLiberarVideo.emit()
+                    self._tratativa_concluida.wait()
                     self.sinalSessaoExpirada.emit()
                     
                     # Aguarda credenciais
