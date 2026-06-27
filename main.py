@@ -152,12 +152,9 @@ class PlayWrightBot(QThread):
             else:
                 self.sinalWhatsappConectado.emit()
             
-            barraPesquisa = self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova")
-            
-            if await barraPesquisa.count() > 0:
-                await self.pagina2.wait_for_timeout(1000)
-                await self.pagina.keyboard.press("Escape")
-                await self.pagina.bring_to_front()
+            await self.pagina2.wait_for_timeout(1000)
+            await self.pagina.keyboard.press("Escape")
+            await self.pagina.bring_to_front()
             # Aguarda o campo de usuário estar visível
             try:
                 # Tenta múltiplas formas de localizar o campo de usuário
@@ -737,56 +734,48 @@ class PlayWrightBot(QThread):
 
             match self.filial: 
                 case "Distribuição":
-                    await self.pagina.keyboard.press("Escape")
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - distribuição")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_text("Alerta de Fadiga - Distribui").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "Costa Rica" | "Costa Rica Leves":
-                    await self.pagina.keyboard.press("Escape")
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - costa rica")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Cost").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "Alto Taquari":
-                    await self.pagina.keyboard.press("Escape")
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - alto taquari")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Alto").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "Cenibra NE" | "Cenibra BO" | "Cenibra SB Agregados":
-                    await self.pagina.keyboard.press("Escape")
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cenibra")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_text("Alerta de Fadiga - Cenibra").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "Catalão":
-                    await self.pagina.keyboard.press("Escape")
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cmoc")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_text("Alerta de Fadiga - CMOC").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "Químico 1 Felipe" | "Automotivo Fabiano" | "Automotivo Felipe" | "Automotivo Alvaro" | "Químico 2 Fabiano" | "Automotivo Kamilla":
-                    await self.pagina.keyboard.press("Escape")
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - rodoviario")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_test_id("cell-frame-container").get_by_text("Alerta de Fadiga - Rodoviário").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "Transporte de Madeira - Expresso/RS":
-                    await self.pagina.keyboard.press("Escape")
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - cmpc")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_text("Alerta de Fadiga - CMPC").click()
                     await self.pagina2.wait_for_timeout(500)
                     await self.subirVideoZap()
                 case "GRID 1" | "GRID 2" | "GRID 3" | "Expresso Nepomuceno - Bracell" :
-                    await self.pagina.keyboard.press("Escape")
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - bracell")
                     await self.pagina2.wait_for_timeout(500)
                     await self.pagina2.get_by_text("Alerta de Fadiga - Bracell").click()
