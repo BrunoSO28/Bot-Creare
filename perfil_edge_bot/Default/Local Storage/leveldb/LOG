@@ -1,6 +1,6 @@
-2026/05/27-16:48:58.120 6ab8 Reusing MANIFEST C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\Local Storage\leveldb/MANIFEST-000001
-2026/05/27-16:48:58.124 6ab8 Recovering log #37
-2026/05/27-16:48:58.126 6ab8 Reusing old log C:\Users\Bruno\Desktop\Bot Creare\perfil_edge_bot\Default\Local Storage\leveldb/000037.log 
-2026/05/27-16:49:09.272 d30 Level-0 table #40: started
-2026/05/27-16:49:09.276 d30 Level-0 table #40: 18379 bytes OK
-2026/05/27-16:49:09.277 d30 Delete type=0 #37
+2026/08/27-20:12:34.545 5118 Reusing MANIFEST C:\Users\brunooliveira\Documents\Bot-Creare-1\perfil_edge_bot\Default\Local Storage\leveldb/MANIFEST-000001
+2026/08/27-20:12:34.564 5118 Recovering log #3
+2026/08/27-20:12:34.567 5118 Reusing old log C:\Users\brunooliveira\Documents\Bot-Creare-1\perfil_edge_bot\Default\Local Storage\leveldb/000003.log 
+2026/08/27-20:13:26.372 53ac Level-0 table #5: started
+2026/08/27-20:13:26.393 53ac Level-0 table #5: 18214 bytes OK
+2026/08/27-20:13:26.397 53ac Delete type=0 #3

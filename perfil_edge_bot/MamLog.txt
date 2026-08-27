@@ -1,0 +1,63 @@
+[2026-08-03T20:05:50.141Z] [INFO] ========================================================================================================================
+[2026-08-03T20:05:50.142Z] [INFO] Initializing MAM Client.
+App: com.microsoft.edge 151.0.4129.59
+SDK: 2.1.367.0
+OS: windows 10.0.19045.6456
+DeviceType: Desktop
+Manufacturer: Dell Inc.
+Model: Vostro 3500
+Telemetry: yes
+Managed device support: enabled
+[2026-08-03T20:05:50.143Z] [INFO] Telemetry session 32ffa05a-216b-4e50-bb2f-5842b2b0d5b6.
+[2026-08-03T20:05:50.145Z] [INFO] Initializing cache (v1).
+[2026-08-03T20:07:12.268Z] [INFO] Shutting down.
+[2026-08-03T20:07:12.269Z] [INFO] Stopping the task scheduler and canceling any outstanding work items...
+[2026-08-03T20:07:12.269Z] [INFO] Task scheduler has stopped, and all work has been canceled.
+[2026-08-03T21:00:39.795Z] [INFO] ========================================================================================================================
+[2026-08-03T21:00:39.795Z] [INFO] Initializing MAM Client.
+App: com.microsoft.edge 151.0.4129.59
+SDK: 2.1.367.0
+OS: windows 10.0.19045.6456
+DeviceType: Desktop
+Manufacturer: Dell Inc.
+Model: Vostro 3500
+Telemetry: yes
+Managed device support: enabled
+[2026-08-03T21:00:39.795Z] [INFO] Telemetry session a2690623-24c7-42c3-8e7f-6a990a29f47d.
+[2026-08-03T21:00:39.811Z] [INFO] Reinitialized cache (v1).
+[2026-08-03T21:03:44.056Z] [INFO] ========================================================================================================================
+[2026-08-03T21:03:44.056Z] [INFO] Initializing MAM Client.
+App: com.microsoft.edge 151.0.4129.59
+SDK: 2.1.367.0
+OS: windows 10.0.19045.6456
+DeviceType: Desktop
+Manufacturer: Dell Inc.
+Model: Vostro 3500
+Telemetry: yes
+Managed device support: enabled
+[2026-08-03T21:03:44.056Z] [INFO] Telemetry session af661a6d-9ea5-41d3-a114-2972da9b9382.
+[2026-08-03T21:03:44.061Z] [INFO] Reinitialized cache (v1).
+[2026-08-24T18:44:26.365Z] [INFO] ========================================================================================================================
+[2026-08-24T18:44:26.366Z] [INFO] Initializing MAM Client.
+App: com.microsoft.edge 151.0.4129.101
+SDK: 2.1.367.0
+OS: windows 10.0.19045.6456
+DeviceType: Desktop
+Manufacturer: Dell Inc.
+Model: Vostro 3500
+Telemetry: yes
+Managed device support: enabled
+[2026-08-24T18:44:26.366Z] [INFO] Telemetry session f6d15daa-bac1-4e9e-8fc8-aa0597c0cf3f.
+[2026-08-24T18:44:26.400Z] [INFO] Reinitialized cache (v1).
+[2026-08-27T23:12:34.537Z] [INFO] ========================================================================================================================
+[2026-08-27T23:12:34.538Z] [INFO] Initializing MAM Client.
+App: com.microsoft.edge 151.0.4129.107
+SDK: 2.1.367.0
+OS: windows 10.0.19045.6456
+DeviceType: Desktop
+Manufacturer: Dell Inc.
+Model: Vostro 3500
+Telemetry: yes
+Managed device support: enabled
+[2026-08-27T23:12:34.538Z] [INFO] Telemetry session 663390f7-0a07-4bc2-8980-6c04c4c0fbc7.
+[2026-08-27T23:12:34.553Z] [INFO] Reinitialized cache (v1).

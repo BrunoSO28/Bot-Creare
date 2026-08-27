@@ -1,1 +1,0 @@
-C:/Users/RASTREAMENTO/AppData/Local/Python/bin/python.exe -m PyInstaller --onefile --windowed --icon="icone_creare.ico" --add-data "icone_creare.ico;." --name "BotCreare" main.py 

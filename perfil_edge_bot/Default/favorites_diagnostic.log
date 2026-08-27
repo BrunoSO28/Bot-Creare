@@ -106,3 +106,14 @@
 2026-05-27 19:48:58.162: [INFO] VisibilityChanged: 0
 2026-05-27 19:48:58.212: [INFO] BookmarkModelLoaded, ids_reassigned: 0
 2026-05-27 19:48:58.212: [INFO] OnDoneLoading sync enabled: 0
+2026-08-03 20:05:44.769: [INFO] CurrentProfilePath: C:\Users\brunooliveira\Documents\Bot-Creare-1\perfil_edge_bot\Default
+2026-08-03 20:05:44.769: [INFO] Profiles total count: 1
+2026-08-03 20:05:44.770: [INFO] Profile: name=Perfil 1 path=C:\Users\brunooliveira\Documents\Bot-Creare-1\perfil_edge_bot\Default lastActive=2026-05-27T19:48:58.201Z
+2026-08-03 20:05:44.770: [INFO] LastUsedProfileDir: C:\Users\brunooliveira\Documents\Bot-Creare-1\perfil_edge_bot\Default
+2026-08-03 20:05:44.770: [INFO] MostRecentlyActiveProfile: name=Perfil 1 path=C:\Users\brunooliveira\Documents\Bot-Creare-1\perfil_edge_bot\Default lastActive=2026-05-27T19:48:58.201Z
+2026-08-03 20:05:44.770: [INFO] VisibilityChanged: 0
+2026-08-03 20:05:44.872: [INFO] OnDoneLoading sync enabled: 0
+2026-08-03 20:05:44.872: [INFO] BookmarkModelLoaded, ids_reassigned: 0
+2026-08-03 20:05:44.872: [INFO] BookmarksLoadDropped droppedNodes=0
+2026-08-03 20:05:44.872: [INFO] BookmarksSnapshot Startup total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1
+2026-08-03 20:07:12.359: [INFO] BookmarksSnapshot Shutdown total=0 bar=0 other=0 mobile=0 showBar=0 showBarNTP=1

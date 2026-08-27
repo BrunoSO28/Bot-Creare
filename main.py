@@ -16,6 +16,7 @@ def resource_path(relative_path):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.dirname(__file__), relative_path)
 
+#Modo escuro 
 def aplicar_modo_escuro(hwnd):
     DWMWA_USE_IMMERSIVE_DARK_MODE = 20
     value = ctypes.c_int(1)
@@ -44,7 +45,6 @@ class PlayWrightBot(QThread):
     sinalQrCode = Signal(bytes)
     sinalWhatsappConectado = Signal()
 
-
     def __init__(self, url):
         super().__init__()
         self.url = url
@@ -63,11 +63,12 @@ class PlayWrightBot(QThread):
         self.window_id = None
         self.cdp = None
 
+    
     def receberConta(self):
         self.conta = janelaLogin()
         self.conta.sinalLogin.connect(self.iniciarConta)
 
-
+    #Realiza login pela UI
     def iniciarConta(self, email, senha, codigo):
         self.email = email
         self.senha = senha
@@ -92,18 +93,15 @@ class PlayWrightBot(QThread):
                 channel="msedge",
                 headless=False,
                 args=[
-                "--window-position=-3000,0",#✅ joga a janela pra fora da tela
+                #✅ joga a janela pra fora da tela
                 "--window-size=1280,720"])
-
-            #for pagina in self.navegador.pages:
-             #   await pagina.close()
 
             self.pagina = await self.navegador.new_page()
             self.pagina.set_default_timeout(0)
             self.pagina2 = await self.navegador.new_page()
             self.pagina2.set_default_timeout(0)
             
-            #Login na conta
+            #Entrar no whatsapp
             await self.pagina.goto(self.url, wait_until="commit", timeout=0)
 
             await self.pagina2.goto("https://web.whatsapp.com/", wait_until="commit", timeout=0)       
@@ -209,27 +207,23 @@ class PlayWrightBot(QThread):
                 except Exception as e2:
                     print(f"Erro no método alternativo: {e2}")
             
-            #await self.pagina.pause()
             await self.pagina.get_by_role("button", name="Entrar").click()
             await self.pagina.wait_for_timeout(1000)
-            #await self.pagina.pause()
 
             campo_codigo = self.pagina.get_by_role("textbox", name="Código")
             if await campo_codigo.count() > 0:
-                self.sinalPedirCodigo.emit()             # ← avisa a janela
-                await self._codigo_recebido.wait()       # ← pausa até o usuário digitar
+                self.sinalPedirCodigo.emit()             #avisa a janela
+                await self._codigo_recebido.wait()       #pausa até o usuário digitar
                 await campo_codigo.fill(self.codigo)
                 await self.pagina.get_by_role("button", name="Entrar").click()
                 await self.pagina.wait_for_timeout(1000)
 
-            self.sinalLoginOk.emit()  # ← login concluído, janela pode fechar
+            self.sinalLoginOk.emit()  #login concluído, janela pode fechar
 
 
             await self.pagina.locator(".theme-switch.ng-star-inserted > .switch > .slider").click()
 
             await self.pagina.get_by_role("columnheader", name="Data do Alarme Activate to").click()
-            #await self.pagina.locator("xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-header/div/div[2]/div/div[3]/p-checkbox/div/div[2]/span").click()
-            #await self.pagina.pause()
                                  
             await asyncio.gather(
             self.monitorarSessao(),
@@ -245,7 +239,7 @@ class PlayWrightBot(QThread):
                 try:
                     await self.pagina.wait_for_selector(
                         'xpath=/html/body/ngx-app/ngx-pages/ngx-sample-layout/nb-layout/div/div/div/div/div/nb-layout-column/filters-outlet/ngx-fatigue-v2/div/div/div[2]/div[1]/nb-card/nb-card-body/p-table/div/div/table/tbody/tr[1]/td[10]/span/button',
-                        state="detached",  # ← espera o elemento ser removido do DOM
+                        state="detached",  #espera o elemento ser removido do DOM
                         timeout=3000
                     )
                 except:
@@ -281,7 +275,6 @@ class PlayWrightBot(QThread):
                 self.sinalSemAlertas.emit(False)
                 self.dataHora = await self.pagina.locator('td[ng-reflect-ng-switch="datetime"] span[tooltipclass="diff"]').first.inner_text()
                 await self.coletarQuantidadeAlertas()
-                #await self.pagina.pause()
                 await tratativa.click()
                 
                 self.alerta = await self.pagina.locator("step-infos label:has-text('Tipo de Alerta') + p-dropdown label.ui-dropdown-label").inner_text()
@@ -296,7 +289,6 @@ class PlayWrightBot(QThread):
 
                 print(self.alerta, self.placa, self.empresa, self.filial, self.motorista, self.dataHora)
 
-                #Download do vídeo - usa .first para pegar o primeiro elemento quando há múltiplos
                 await self.pagina.locator(".playMovie").first.dblclick()
                 await self.pagina.wait_for_timeout(1000)
 
@@ -390,7 +382,7 @@ class PlayWrightBot(QThread):
                 print(f">>> ERRO no loop principal: {e}")
                 self._tratativa_concluida.set()  # nunca trava o loop
                 await asyncio.sleep(2)
-    
+    #Caso o site desconecte o usuário, ele refaz abre a tela de login da UI
     async def monitorarSessao(self):
         """Roda em paralelo, detecta expiração em qualquer momento."""
         while not self.isInterruptionRequested():
@@ -469,11 +461,13 @@ class PlayWrightBot(QThread):
         asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self.run_playwright())
 
+    #Faz o click para selecionar a tratativa em segundo plano
     def clickSelecao(self, valor: str):
         if self.loop:
             asyncio.run_coroutine_threadsafe(
                 self.selecaoTratativa(valor), self.loop)
 
+    #Coleta as opções do dropdown de tratativas
     async def coletarTratativas(self):
         try:
             await self.pagina.wait_for_selector(
@@ -492,11 +486,13 @@ class PlayWrightBot(QThread):
         except Exception as e:
             print(">>> ERRO coletarTratativas:", e)
 
+    #Envia o código para o navegador
     def enviarCodigo(self, codigo: str):
         self.codigo = codigo
         if self.loop:
             self.loop.call_soon_threadsafe(self._codigo_recebido.set)
 
+    #Seleciona as oções de tratativa no dropdown
     async def selecaoTratativa(self, valor: str):
         print(">>> selecaoTratativa chamado com:", valor)
         try:
@@ -547,8 +543,8 @@ class PlayWrightBot(QThread):
         except Exception as e:
             print(">>> ERRO selecaoTratativa:", e)
 
+    #Preenche a caixa de texto com um texto diferente quando a tratativa é conduta
     async def preencherTextoConduta(self, tipo_conduta: str):
-        """Preenche o textarea com o texto específico da conduta"""
         print(f">>> preencherTextoConduta chamado com: {tipo_conduta}")
         try:
             texto = ""
@@ -565,8 +561,8 @@ class PlayWrightBot(QThread):
         except Exception as e:
             print(f">>> ERRO preencherTextoConduta: {e}")
 
+    #Preenche a caixa de texto com um texto diferente quando a tratativa é ausência
     async def preencherTextoAusencia(self, tipo_ausencia: str):
-        """Preenche o textarea com o texto específico da ausência"""
         print(f">>> preencherTextoAusencia chamado com: {tipo_ausencia}")
         try:
             texto = ""
@@ -583,19 +579,21 @@ class PlayWrightBot(QThread):
         except Exception as e:
             print(f">>> ERRO preencherTextoAusencia: {e}")
 
+    #Método chamado quando um botão de conduta é clicado
     def clickConduta(self, tipo_conduta: str):
-        """Método chamado quando um botão de conduta é clicado"""
         if self.loop:
             asyncio.run_coroutine_threadsafe(
                 self.preencherTextoConduta(tipo_conduta), self.loop
             )
-
+    
+    #Método chamado quando um botão de ausência é clicado
     def clickAusencia(self, tipo_ausencia: str):
-        """Método chamado quando um botão de ausência é clicado"""
         if self.loop:
             asyncio.run_coroutine_threadsafe(
                 self.preencherTextoAusencia(tipo_ausencia), self.loop
             )
+    
+    #Método chamado quando alerta é apenas monitorado e não reportado para operação
     async def alertaMonitorado(self):
         try:
             await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
@@ -630,6 +628,7 @@ class PlayWrightBot(QThread):
         
         print(">>> Tratativa Monitorada")
 
+    #Método para upar o vídeo para o WhatsApp
     async def subirVideoZap(self):
         try:
             await self.pagina2.bring_to_front()
@@ -673,13 +672,14 @@ class PlayWrightBot(QThread):
             print(f">>> ERRO subirVideoZap: {e}")
             traceback.print_exc()
         
+    #Método chamado quando alerta é reportado para operação
     async def reportarOperacao(self):
         try:
             await self.pagina.get_by_role("button", name="Finalizar Tratativa").click()
             self._video_liberado.clear()
             self.sinalLiberarVideo.emit()
             await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
-
+            #Abre a aba do WhatsApp para enviar o vídeo com a tratativa
             await self.pagina2.bring_to_front()
             botaoNestaJanela = self.pagina2.get_by_role("button", name="Usar nesta janela")
             try:
@@ -687,9 +687,7 @@ class PlayWrightBot(QThread):
                 await botaoNestaJanela.click()
             except:
                 pass
-
             await self.pagina.wait_for_timeout(300)
-
             qrCode = self.pagina2.get_by_role("img", name="Scan this QR code to link a")
             try:
                 await qrCode.wait_for(state="visible", timeout=5000)
@@ -704,8 +702,7 @@ class PlayWrightBot(QThread):
 
                 self.cdp = await self.navegador.new_cdp_session(self.pagina2)
                 self.window_id = (await self.cdp.send("Browser.getWindowForTarget"))["windowId"]
-
-                # Maximiza
+                # Maximiza a tela para ler o QRCode do 
                 await self.cdp.send("Browser.setWindowBounds", {
                     "windowId": self.window_id,
                     "bounds": {"windowState": "maximized"}
@@ -731,7 +728,7 @@ class PlayWrightBot(QThread):
             self.reportOperacao = await self.pagina.locator('div[style="width: 100%;"]').inner_text()
 
             print(self.reportOperacao)
-
+            #Diferentes tratativas
             match self.filial: 
                 case "Distribuição":
                     await self.pagina2.get_by_role("textbox", name="Pesquisar ou começar uma nova").fill("alerta de fadiga - distribuição")
@@ -808,29 +805,30 @@ class PlayWrightBot(QThread):
         finally:
             self._tratativa_concluida.set()
 
+    #Método chamado quando um botão de Monitorar é clicado
     def clickMonitorado(self):
         if self.loop:
-            
             asyncio.run_coroutine_threadsafe(self.alertaMonitorado(), self.loop)
 
+    #Método chamado quando um botão de Reportar é clicado
     def clickReportarOperacao(self):
         if self.loop:
-            
             asyncio.run_coroutine_threadsafe(self.reportarOperacao(), self.loop)
 
+    #Método chamado quando um botão de Validar é clicado
     def clickValidar(self):
         if self.loop:
-                
-                asyncio.run_coroutine_threadsafe(self.validarAlerta(), self.loop)
+            asyncio.run_coroutine_threadsafe(self.validarAlerta(), self.loop)
     
+    #Método que avança nas estapas de validação do alerta antes de fazer a tratativa
     async def validarAlerta(self):
             videosAlerta = self.pagina.locator('ul[style="margin-bottom: 20px;"] li#itemToHistory')
-            total = await videosAlerta.count()  # Adiciona await aqui
+            total = await videosAlerta.count()
             print(f">>> Total de vídeos do alerta: {total}")
             
             for i in range(total):
-                await videosAlerta.nth(i).click()  # Adiciona await aqui também
-                await self.pagina.wait_for_timeout(300)  # Aguarda um pouco entre os cliques
+                await videosAlerta.nth(i).click()  
+                await self.pagina.wait_for_timeout(300)  
             
             print(f">>> Todos os {total} vídeos foram selecionados")
 
@@ -847,33 +845,30 @@ class PlayWrightBot(QThread):
                 pass
             if await cancela.count()> 0:
                 await cancela.click()
-            #await self.pagina.pause()
 
             self.sinalPronto.emit()
             
             # Aguarda um pouco antes de verificar o próximo alerta
             await asyncio.sleep(1)
             # Libera para próximo alerta
-
+    #Invalida o alerta atual voltando e selecionando 'Alerta invalidado'
     async def invalidarAlerta(self):
-        """Invalida o alerta atual voltando e selecionando 'Alerta invalidado'"""
         if self._tratativa_concluida.is_set():
             print("Invalidação ignorada, nada sendo processado")
             return
         try:
             print(">>> Iniciando invalidação do alerta")
               # Bloqueia o loop principal
-            
             self._video_liberado.clear()
             self.sinalLiberarVideo.emit()
             await asyncio.wait_for(self._video_liberado.wait(), timeout=5.0)
             # Primeiro clique no botão Voltar
             videosAlerta = self.pagina.locator('ul[style="margin-bottom: 20px;"] li#itemToHistory')
-            total = await videosAlerta.count()  # Adiciona await aqui
+            total = await videosAlerta.count()
             print(f">>> Total de vídeos do alerta: {total}")
             
             for i in range(total):
-                await videosAlerta.nth(i).click()  # Adiciona await aqui também
+                await videosAlerta.nth(i).click()  
                 await self.pagina.wait_for_timeout(300)  # Aguarda um pouco entre os cliques
             
             print(f">>> Todos os {total} vídeos foram selecionados")
@@ -938,19 +933,24 @@ class PlayWrightBot(QThread):
             self._tratativa_concluida.set()
             print(">>> Flag processando_alerta liberada")
 
+    #Método chamado quando um botão de Invalidar é clicado
     def clickInvalidar(self):
         if self.loop:
             asyncio.run_coroutine_threadsafe(self.invalidarAlerta(), self.loop)
 
+    #Recebe o status da checkbox de prioridade dos alertas
     def receberCheck(self):
         self.check = janelaPrincipal()
         self.check.sinalCheck.connect(self.escolherCheck)
     
+    #Recebe a informação de click na checkbox de prioridade de alertas
     def clickCheck(self, valores):
         if self.loop:
             asyncio.run_coroutine_threadsafe(
                 self.escolherCheck(valores), self.loop
             )
+    
+    #Método para fazer o click no checkbox de prioridade de alertas
     async def escolherCheck(self, estados: dict):
         seletores = {
             "Alto":  self.pagina.locator('.box-risk-chart[title="Filtrar Alertas de Alto Risco"] .fa.no-filter-icon'),
@@ -982,6 +982,7 @@ class PlayWrightBot(QThread):
             except Exception as e:
                 print(f">>> ERRO escolherCheck [{nivel}]: {e}")
             
+    #Método para registrar a quantidade de alertas 
     async def coletarQuantidadeAlertas(self):
         try:
             alto  = await self.pagina.locator('.box-risk-chart[title="Filtrar Alertas de Alto Risco"] focus-donut-chart').get_attribute("ng-reflect-value")
@@ -993,11 +994,12 @@ class PlayWrightBot(QThread):
         except Exception as e:
             print(f">>> ERRO coletarQuantidadeAlertas: {e}")
 
+    #Recebe a informação de click no botão reset
     def clickReset(self):
         if self.loop:
-            
             asyncio.run_coroutine_threadsafe(self.resetarBot(), self.loop)
 
+    #Método para resetar o bot se der algum bug
     async def resetarBot(self):      
         await self.pagina.mouse.click(400, 10)
         await self.pagina.wait_for_timeout(1000)
@@ -1008,7 +1010,7 @@ class PlayWrightBot(QThread):
         await self.pagina.wait_for_timeout(1000)
         print(">>> Flag processando_alerta liberada")
 
-
+#Janela de login
 class janelaLogin(QMainWindow):
     sinalLogin = Signal(str, str, str)
     sinalCodigo = Signal(str)
@@ -1083,7 +1085,8 @@ class janelaLogin(QMainWindow):
         self.configurarAutocomplete()
         self.carregarUltimoLogin()
 
-    def mostrarCampoCodigo(self):   # ← deve estar aqui, dentro da classe
+    #Método que mostra o campo do código na UI caso seja o primeiro login no navegador
+    def mostrarCampoCodigo(self):   
         self.labelCodigo.show()
         self.inputCodigo.show()
         self.inputCodigo.setEnabled(True)
@@ -1093,6 +1096,7 @@ class janelaLogin(QMainWindow):
         self.btnEntrar.clicked.connect(self.submitCodigo)
         self.inputCodigo.setFocus()
 
+    #Método que envia o código para o navegador
     def submitCodigo(self):
         codigo = self.inputCodigo.text().strip()
         if not codigo:
@@ -1102,7 +1106,8 @@ class janelaLogin(QMainWindow):
         self.sinalCodigo.emit(codigo)
         self.btnEntrar.setEnabled(True)
         self.btnEntrar.setText("Aguardando...")
-
+    
+    #Método que envia o email e senha para o navegador
     def submitLogin(self):
         email = self.inputEmail.text().strip()
         senha = self.inputSenha.text().strip()
@@ -1116,9 +1121,9 @@ class janelaLogin(QMainWindow):
         self.btnEntrar.setEnabled(False)
         self.btnEntrar.setText("Entrando...")  # feedback visual enquanto aguarda
     
+    #Método que completa a senha automaticamente quando reconhece uma senha antiga
     def configurarAutocomplete(self):
         contas = self.settings.value("contas", {}) or {}
-
         self.modelo = QStringListModel(list(contas.keys()))
         self.completer = QCompleter(self.modelo, self)
         self.completer.setCaseSensitivity(Qt.CaseInsensitive)
@@ -1132,17 +1137,20 @@ class janelaLogin(QMainWindow):
             lambda: self.preencherSenhaPorEmail(self.inputEmail.text())
         )
 
+    #Método que preenche uma senha baseado no email do usuário
     def preencherSenhaPorEmail(self, email: str):
         contas = self.settings.value("contas", {}) or {}
         if email in contas:
             self.inputSenha.setText(contas[email])
 
+    #Método que carrega o usuário nos campos de login
     def carregarUltimoLogin(self):
         ultimo = self.settings.value("ultimo_login", "")
         if ultimo:
             self.inputEmail.setText(ultimo)
             self.preencherSenhaPorEmail(ultimo)
 
+    #Método que salva os usuários nos campos de login 
     def salvarConta(self, email: str, senha: str):
         contas = self.settings.value("contas", {}) or {}
         contas[email] = senha
@@ -1152,7 +1160,7 @@ class janelaLogin(QMainWindow):
         # Atualiza o autocomplete com o novo email
         self.modelo.setStringList(list(contas.keys()))
 
-
+#UI para controle das ações
 class janelaPrincipal(QMainWindow):
     sinalCheck = Signal(str)
     def __init__(self):
@@ -1163,7 +1171,6 @@ class janelaPrincipal(QMainWindow):
         self.videos = {}
         self.janelaQr = None
 
-        # Janela mais alta e menos larga: 70% largura, 90% altura
         self.ajustarJanelaAoMonitor(largura_pct=70, altura_pct=90)
         
         # ── Widget central ──────────────────────────────────────────────────
@@ -1189,13 +1196,10 @@ class janelaPrincipal(QMainWindow):
 
         self.tabela = QTableWidget(0, 3)
         self.tabela.setHorizontalHeaderLabels(["Tipo Alerta", "Quando", "Tratativa"])
-        # Cabeçalho estica para preencher o espaço
         self.tabela.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
 
-        # Não permite edição pelo usuário
         self.tabela.setEditTriggers(QTableWidget.NoEditTriggers)
 
-        # Seleciona a linha inteira ao clicar
         self.tabela.setSelectionBehavior(QTableWidget.SelectRows)
 
         self.layoutTabela = QVBoxLayout(self.painelTabela)
@@ -1235,7 +1239,7 @@ class janelaPrincipal(QMainWindow):
         self.seletorVideo.currentTextChanged.connect(self.trocarVideo)
         layoutCentro.addWidget(self.seletorVideo)
 
-        # Vídeo – maior e proporcional
+        # Vídeo
         self.caixaVideo = QVideoWidget()
         self.caixaVideo.setMinimumSize(520, 400)
         self.caixaVideo.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -1365,7 +1369,7 @@ class janelaPrincipal(QMainWindow):
         separador.setStyleSheet("background: #444; margin: 6px 0;")
         layoutDireita.addWidget(separador)
 
-        # ── Seção de Tratativa (oculta até clicar Válido) ──
+        # ── Seção de Tratativa ──
         self.containerT = QWidget()
         self.containerT.hide()
         layoutT = QVBoxLayout(self.containerT)
@@ -1421,7 +1425,7 @@ class janelaPrincipal(QMainWindow):
 
         layoutDireita.addWidget(self.containerT)
 
-        # ── Seção de Report (oculta até clicar Válido) ──
+        # ── Seção de Report ──
         self.containerR = QWidget()
         self.containerR.hide()
         layoutR = QHBoxLayout(self.containerR)
@@ -1502,7 +1506,6 @@ class janelaPrincipal(QMainWindow):
         self.iniciarThread()
 
     # ── Métodos de controle ──────────────────────────────────────────────────
-
     def iniciarThread(self):
         self.bot = PlayWrightBot("https://login.goawakecloud.com.br/pt-br/goawake?cc=true")
         self.bot.sinalInfo.connect(self.coletarInfo)
@@ -1519,6 +1522,7 @@ class janelaPrincipal(QMainWindow):
         self.bot.sinalWhatsappConectado.connect(self.fecharQrSeAberto, Qt.QueuedConnection)
         self.bot.start()
 
+    #Método que recebe as informações do navegador
     def coletarInfo(self, alerta, placa, filial, empresa, motorista, dataHora):
         self.infoAlerta.setText(alerta)
         self.infoPlaca.setText(placa)
@@ -1540,13 +1544,16 @@ class janelaPrincipal(QMainWindow):
         self.containerR.hide()
         #self.pedirTratativas()
 
+    #Atualiza a quantidade de vezes que foi visto o mesmo alerta
     def atualizarColunas(self, quantidade):
         self.labelColunas.setText(f"Alerta já foi visto {quantidade} vezes")
         print(f">>> Label atualizado: {quantidade} alertas monitorados")
 
+    #Atualiza o contador de alertas tratados no dia
     def atualizarContador(self, contador):
         self.labelContador.setText(f"Alertas tratados hoje: {contador}")
 
+    #Atualiza a tabela de histórico de alertas
     def atualizarTabela(self, linhas, dados):
         print(f'>>> dados: {dados}')
         if hasattr(self, 'noHistoricoLabel'):
@@ -1567,6 +1574,7 @@ class janelaPrincipal(QMainWindow):
                 self.tabela.setItem(i, 2, QTableWidgetItem(tratativa))
             print(f">>> Tabela atualizada com {linhas} linhas")
 
+    #Método que recebe os vídeos baixados no navegador
     def downloadConcluido(self, video1, video2, video3):
         self.videos = {
             "Câmera 1": video1,
@@ -1575,6 +1583,7 @@ class janelaPrincipal(QMainWindow):
         }
         self.trocarVideo(self.seletorVideo.currentText())
     
+    #Opção de trocar os vídeos na UI
     def trocarVideo(self, nome: str):
         caminho = self.videos.get(nome)
         if caminho and os.path.exists(caminho):
@@ -1582,6 +1591,7 @@ class janelaPrincipal(QMainWindow):
             self.player.setSource(QUrl.fromLocalFile(caminho))
             self.player.play()
 
+    #Método que apaga o vídeo depois que o alerta já foi tratado para que o próximo possa ser exibido
     def liberarVideoAtual(self):
         try:
             self.player.stop()
@@ -1611,6 +1621,7 @@ class janelaPrincipal(QMainWindow):
     async def _marcarVideoLiberado(self):
         self.bot._video_liberado.set()
 
+    #Opções de ecolha das tratativas
     def abrirTratativa(self):
         if hasattr(self, '_tratativaAberta'):
             return
@@ -1620,20 +1631,24 @@ class janelaPrincipal(QMainWindow):
         self.containerR.show()
         if self.bot:
             self.bot.clickValidar()
-
+    
+    #Click no botão inválidar
     def clickInvalidar(self):
         self.desabilitarBotoesAcao()
         if self.bot:
             self.bot.clickInvalidar()
 
+    #Método que desabilita os botões quando um alerta foi tratado
     def desabilitarBotoesAcao(self):
         self.btnValido.setEnabled(False)
         self.btnInvalido.setEnabled(False)
 
+    #Método que habilita os botões quando chega um novo alerta
     def habilitarBotoesAcao(self):
         self.btnValido.setEnabled(True)
         self.btnInvalido.setEnabled(True)
 
+    #Método que mostra as tratativas de acordo com a escolha do usuário na UI
     def sincronizarSelecao(self, valor: str):
         print(">>> sincronizarSelecao chamado:", valor)
         self.ocultarTodosBotoes()
@@ -1644,6 +1659,7 @@ class janelaPrincipal(QMainWindow):
         if self.bot:
             self.bot.clickSelecao(valor, )
 
+    #Método que lista as tratativas na UI
     def listarTratativas(self, opcoes: list):
         if self.tratativas is None:
             self._tratativas_pendentes = opcoes
@@ -1653,9 +1669,11 @@ class janelaPrincipal(QMainWindow):
         self.tratativas.addItems(opcoes)
         self.tratativas.blockSignals(False)
 
+    #Método que recebe as tratativas do navegador
     def pedirTratativas(self):
         asyncio.run_coroutine_threadsafe(self.bot.coletarTratativas(), self.bot.loop)
 
+    #Mostra as tratativas específicas de conduta
     def mostrarConduta(self):
         self.cameraDesajustada.hide()
         self.cameraEscura.hide()
@@ -1664,6 +1682,7 @@ class janelaPrincipal(QMainWindow):
         self.cigarro.show()
         self.cameraManipulada.show()
 
+    #Mostra as tratativas específicas de ausência
     def mostrarAusencia(self):
         self.celular.hide()
         self.cigarro.hide()
@@ -1672,6 +1691,7 @@ class janelaPrincipal(QMainWindow):
         self.cameraEscura.show()
         self.cameraDefeito.show()
 
+    #Método que oculta todos os botões
     def ocultarTodosBotoes(self):
         self.celular.hide()
         self.cigarro.hide()
@@ -1680,6 +1700,7 @@ class janelaPrincipal(QMainWindow):
         self.cameraEscura.hide()
         self.cameraDefeito.hide()
 
+    #Método que mostra a barra de carregamento quando não há nenhum alerta para tratativa
     def toggleLoading(self, sem_alertas: bool):
         if not self.loadingWidget or not self.caixaVideo:
             return
@@ -1702,6 +1723,7 @@ class janelaPrincipal(QMainWindow):
         # Esquerda
         self.painelTabela.setVisible(not sem_alertas)
 
+    #Reabre a janela de login em caso de desconexão
     def reabrirLogin(self):
         self.janelaLogin = janelaLogin()
         self.janelaLogin.bot = self.bot
@@ -1712,6 +1734,7 @@ class janelaPrincipal(QMainWindow):
         self.janelaLogin.setWindowFlags(self.janelaLogin.windowFlags() | Qt.WindowStaysOnTopHint)
         self.janelaLogin.show()
     
+    #Mostra a checkbox de nível de alertas na UI
     def validarRisco(self):
         checks = [self.checkAltoRisco, self.checkMedioRisco, self.checkBaixoRisco]
         marcados = [c for c in checks if c.isChecked()]
@@ -1730,12 +1753,13 @@ class janelaPrincipal(QMainWindow):
             "Baixo": self.checkBaixoRisco.isChecked(),
         })
 
+    #Mostra a quantidade de alertas na UI
     def atualizarQuantidadeAlertas(self, alto, medio, baixo):
         self.labelAltoRisco.setText(f"{alto} {'Alerta' if alto == 1 else 'Alertas'} - ALTO RISCO")
         self.labelMedioRisco.setText(f"{medio} {'Alerta' if medio == 1 else 'Alertas'} - MÉDIO RISCO")
         self.labelBaixoRisco.setText(f"{baixo} {'Alerta' if baixo == 1 else 'Alertas'} - BAIXO RISCO")
   
-
+    #Método que aplica o modo escuro na UI
     def aplicarModoEscuro(self):
         self.setStyleSheet("""
             QMainWindow, QWidget {
@@ -1832,6 +1856,7 @@ class janelaPrincipal(QMainWindow):
             }
         """)
 
+    #Método para ler o QRCode do WhatsApp
     def qrCode(self, dados: bytes):
         if self.janelaQr is not None:  # já aberta, atualiza ao invés de criar nova
             return
@@ -1866,12 +1891,13 @@ class janelaPrincipal(QMainWindow):
         self.janelaQr.adjustSize()
         self.janelaQr.show()
 
+    #Fecha a janela do QRCode depois de conectado
     def fecharQrSeAberto(self):
         if hasattr(self, 'janelaQr') and self.janelaQr is not None:
             QMetaObject.invokeMethod(self.janelaQr, "close", Qt.QueuedConnection)
             self.janelaQr = None
 
-
+    #Ajusta a janela da UI para diferentes resoluções de tela
     def ajustarJanelaAoMonitor(self, largura_pct=70, altura_pct=90):
         """Ajusta o tamanho da janela como percentual da tela disponível."""
         tela = QApplication.primaryScreen()
